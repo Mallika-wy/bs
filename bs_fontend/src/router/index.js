@@ -6,7 +6,6 @@ import {
 import Layout from '@/layouts/Layout.vue'
 import Login from "@/views/Login.vue"
 import Register from "@/views/Register.vue"
-import LoginTJ from "@/views/LoginTJ.vue"
 import History from "@/views/History.vue"
 import Search from "@/views/Search.vue"
 import User from "@/views/User.vue"
@@ -57,12 +56,6 @@ const routes = [
         component: Register,
         meta: {
             title: '注册-ZJU B/S'
-        }
-    }, {
-        path: '/loginTJ',
-        component: LoginTJ,
-        meta: {
-            title: '淘宝京东登录-ZJU B/S'
         }
     }, {
         path: '/item',

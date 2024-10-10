@@ -8,8 +8,8 @@
     <el-col :lg="8" :md="12" class="bg-light-50 flex items-center justify-center flex-col">
       <h2 class="font-bold text-3xl text-gray-800 mb-6">用户登录</h2>
       <el-form ref="formRef" :rules="rules" :model="form">
-        <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="请输入用户名">
+        <el-form-item prop="name">
+          <el-input v-model="form.name" placeholder="请输入用户名">
             <template #prefix>
               <el-icon>
                 <User />
@@ -38,7 +38,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { login } from '@/api/login'
+import { login } from '@/api/api'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 
@@ -48,7 +48,7 @@ import { notify } from '@/composables/utils'
 const loading = ref(false)
 
 const form = reactive({
-  username: '',
+  name: '',
   password: ''
 })
 
@@ -57,7 +57,7 @@ const store = useStore()
 const router = useRouter()
 
 const rules = {
-  username: [
+  name: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 6, max: 20, message: '长度在 6 到 20 个字符', trigger: 'blur' }
   ],
@@ -83,15 +83,15 @@ const onSubmit = () => {
     if (!valid)
       return false
     loading.value = true
-    login(form.username, form.password)
+    login(form.name, form.password)
       .then(res => {
         console.log(res);
         if (res.code === 200) {
           setToken(res.data.cookie)
-          store.commit('setUser', res.data.id)
+          store.commit('setUser', res.data)
           console.log(res.data.id);
           notify('success', res.message)
-          router.push('/loginTJ')
+          router.push('/User')
         } else {
           notify('error', res.message)
         }
@@ -102,5 +102,4 @@ const onSubmit = () => {
 }
 </script>
 
-<style>
-</style>
+<style></style>

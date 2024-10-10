@@ -3,12 +3,12 @@ import { createStore } from "vuex"
 const store = createStore({
   state() {
     return {
-        user_id: {}
+      user: {}
     }
   },
   mutations: {
-    setUser(state, user_id) {
-      state.user_id = user_id
+    setUser(state, user) {
+      state.user = user
     },
   }
 })
