@@ -17,12 +17,18 @@ export function modifyUser(id, modifiedUser) {
 }
 
 
-export function addTb(id, infoTBJD) {
+export function addTb(user_id, info_tb) {
     return axios.post("/addTb", {
-        id,
-        infoTBJD
+        user_id,
+        info_tb
     })
 }
+
+export function test() {
+    return axios.post("/test", {
+    })
+}
+
 
 
 export function searchItem(id, searchText) {
@@ -34,9 +40,9 @@ export function searchItem(id, searchText) {
     })
 }
 
-export function addJd(id) {
+export function addJd(user_id) {
     return axios.post("/addJd", {
-        user_id: id
+        user_id
     })
 }
 
@@ -44,5 +50,18 @@ export function getQrcode() {
     return axios.get("/getQrcode", {
         params: {
         }
+    })
+}
+
+export function getDoc() {
+    return axios.get("/getDoc", {
+        params: {
+        }
+    })
+}
+
+export function register(user_info_dict) {
+    return axios.post("/register", {
+        user_info_dict
     })
 }

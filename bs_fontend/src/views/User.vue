@@ -39,31 +39,6 @@
             </el-form-item>
         </el-form>
     </div>
-    <div>
-        淘宝账密设置
-        <el-input v-model="form_tb.t_name" placeholder="请输入淘宝账号">
-            <template #prefix>
-                <el-icon>
-                    <User />
-                </el-icon>
-            </template>
-        </el-input>
-        <el-input type="password" v-model="form_tb.t_password" placeholder="请输入淘宝账号密码" show-password>
-            <template #prefix>
-                <el-icon>
-                    <Lock />
-                </el-icon>
-            </template>
-        </el-input>
-        <el-button type="primary" @click="submitTb">提交</el-button>
-    </div>
-
-    <div>
-        <el-button type="primary" @click="startLoginJd">获取京东登录二维码</el-button>
-        <el-button v-if="showRefresh" type="primary" @click="refreshQrcode">刷新二维码</el-button>
-        <el-image src="" alt="description" fit="cover"></el-image>
-        <img src="https://qr.m.jd.com/show?appid=133&size=147&t=1728487617936" alt="Smiley face" width="42" height="42">
-    </div>
 </template>
 
 <script setup>
@@ -71,12 +46,10 @@ import { useStore } from 'vuex';
 import { computed, ref, reactive } from 'vue';
 
 import { notify } from '@/composables/utils'
-import { modifyUser, addTb, addJd, getQrcode } from '@/api/api';
+import { modifyUser } from '@/api/api';
 
 const store = useStore();
 const editing = ref(false);
-const showRefresh = ref(false);
-const qrcodeUrl = ref('static/QrcodeFailed.png');
 
 const sexText = computed(() => {
     const sex = store.state.user.sex;
@@ -90,12 +63,6 @@ const form = reactive({
     address: '',
     sex: null
 })
-
-const form_tb = reactive({
-    t_name: '',
-    t_password: '',
-})
-
 
 
 const startEdit = () => {
@@ -136,55 +103,11 @@ const submitEdit = () => {
         notify('error', "没有任何修改")
     }
 };
-
-const submitTb = () => {
-    for (let key in form_tb) {
-        if (!form_tb[key].trim()) { // 使用trim()去除可能的空白字符
-            notify('error', "账号或密码不能为空")
-            return;
-        }
-    }
-
-    const User = store.state.user;
-    const data = { ...form_tb }
-    addTb(User.id, data)
-        .then(res => {
-            if (res.code === 200) {
-                notify('success', res.message)
-            } else {
-                notify('error', res.message)
-            }
-        })
-}
-
-const startLoginJd = () => {
-    showRefresh.value = true;
-    const User = store.state.user;
-    addJd(User.id) 
-        .then(res => {
-            if (res.code === 200) {
-                showRefresh.value = false;
-                notify('success', res.message)
-            } else {
-                notify('error', res.message)
-            }
-        })
-}
-
-const refreshQrcode = () => {
-    getQrcode()
-        .then(res => {
-            if (res.code === 200) {
-                qrcodeUrl.value = res.data
-                notify('success', res.message)
-            } else {
-                notify('error', res.message)
-            }
-        })
-}
-
 </script>
 
 <style scoped>
-/* 你的样式 */
+.image-container {
+  padding: 30px; /* 根据需要调整大小 */
+  background-color: white; /* 设置背景颜色为白色 */
+}
 </style>

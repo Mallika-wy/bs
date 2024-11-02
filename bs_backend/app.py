@@ -3,7 +3,7 @@ from flask_migrate import Migrate
 
 from myapp import create_app
 from myapp.plugin import db
-from myapp.models import User, Account, Cookie
+from myapp.models import User, Account, Cookie, Item, Item_search, Search
 
 
 app = create_app()
@@ -35,3 +35,4 @@ def init():
     except Exception as e:
         db.session.rollback()
         click.echo('Error adding default user: ' + str(e))
+

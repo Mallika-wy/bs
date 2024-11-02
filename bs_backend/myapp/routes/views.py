@@ -1,11 +1,15 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, current_app
 import bcrypt
 import time
+import os
+from fuzzywuzzy import fuzz
 
 from ..plugin import db, message_queue
-from ..models import User, Account, Cookie
+from ..models import User, Account, Cookie, Item, Item_search, Search, Subscribe
 from ..utils.ApiResult import ApiResult
-from ..utils.drission import get_tb_cookies, spider_taobao, get_jd_qrcode_and_cookie
+from ..utils.email import send_email
+from ..utils.drission import get_tb_cookies, spider_taobao, get_jd_qrcode_and_cookie, \
+    spider_jd, get_tb_price, get_jd_price
 
 
 bp = Blueprint('main', __name__)
@@ -45,13 +49,13 @@ def login():
 
 @bp.route('/register', methods=['POST'])
 def register():
-    data = request.get_json()
-    name = data.get('name')
-    password = data.get('password')
-    email = data.get('email')
-    sex = data.get('sex')
-    address = data.get('address')
-    phone = data.get('phone')
+    data = request.get_json()['user_info_dict']
+    name = data['name']
+    password = data['password']
+    email = data['email']
+    sex = data['sex']
+    address = data['address']
+    phone = data['phone']
 
     user = User.query.filter_by(name=name).first()
     if user:
@@ -126,22 +130,27 @@ def add_tb_account():
         result = ApiResult(code=401, message='淘宝账号添加失败，可能账号密码错误')
         return result.make_response()
 
+    cookies_to_delete = Cookie.query.filter_by(user_id=user_id, type=1).all()
+    for cookie in cookies_to_delete:
+        db.session.delete(cookie)
+    db.session.commit()
+
     cookies_string = data['cookies_string']
     for cookie_string in cookies_string:
-        new_cookie = Cookie(user_id=data['id'], type=1, cookie=cookie_string)
+        new_cookie = Cookie(user_id=user_id, type=1, cookie=cookie_string)
         db.session.add(new_cookie)
     db.session.commit()
 
     old_account = Account.query.get(user_id)
     if old_account:
-        old_account.tb_name = info_tb['tb_name']
-        old_account.tb_password = info_tb['tb_password']
+        old_account.tb_name = info_tb['t_name']
+        old_account.tb_password = info_tb['t_password']
         db.session.commit()
     else:
         new_account = Account(
             user_id=user_id,
-            tb_name=info_tb['tb_name'],
-            tb_password=info_tb['tb_password']
+            tb_name=info_tb['t_name'],
+            tb_password=info_tb['t_password']
         )
         db.session.add(new_account)
         db.session.commit()
@@ -160,9 +169,14 @@ def add_jd_account():
         result = ApiResult(code=401, message="超时，请重新尝试扫码登录")
         return result.make_response()
 
+    cookies_to_delete = Cookie.query.filter_by(user_id=user_id, type=2).all()
+    for cookie in cookies_to_delete:
+        db.session.delete(cookie)
+    db.session.commit()
+
     cookies_string = data['cookies_string']
     for cookie_string in cookies_string:
-        new_cookie = Cookie(user_id=data['id'], type=2, cookie=cookie_string)
+        new_cookie = Cookie(user_id=user_id, type=2, cookie=cookie_string)
         db.session.add(new_cookie)
     db.session.commit()
 
@@ -186,17 +200,17 @@ def add_jd_account():
 def get_qrcode():
     timeout = 20
     end_time = time.time() + timeout
-    qrcode_url = ''
+    qrcode_base64 = ''
     while time.time() < end_time:
-        qrcode_url = message_queue.get(block=False)
-        if qrcode_url:
+        qrcode_base64 = message_queue.get(block=False)
+        if qrcode_base64:
             break
         time.sleep(1)  # 每隔1秒检查一次
-    if not qrcode_url:
+    if not qrcode_base64:
         result = ApiResult(code=401, message="没有获得到二维码")
         return result.make_response()
 
-    result = ApiResult(code=200, message='成功得到二维码', data=qrcode_url)
+    result = ApiResult(code=200, message='成功得到二维码', data=qrcode_base64)
     return result.make_response()
 
 
@@ -204,12 +218,41 @@ def get_qrcode():
 def search():
     user_id = request.args.get('id')
     search_text = request.args.get('searchText')
+     
+    searchs = Search.query.all()
+    if searchs:
+        search_id = -1
+        max_similarity = -1
+        for search in searchs:
+            similarity = fuzz(search_text, search.search_text)
+            if similarity > current_app.config['fazz_threshold']:
+                if max_similarity < similarity:
+                    max_similarity = similarity
+                    search_id = search.search_id
+        if search_id != -1:
+            item_searchs = Item_search.query.filter_by(search_id=search_id).all()
+            item_ids = [item_search.item_id for item_search in item_searchs]
+            items = Item.query.filter(Item.item_id.in_(item_ids)).all()
+            items_list = [
+                {
+                    'item_id': item.real_id,
+                    'title': item.title,
+                    'type': item.type,
+                    'price': item.price,
+                    'nick': item.nick,
+                    'item_url': item.item_url,
+                    'img_url': item.img_url,
+                    'procity': item.procity
+                }
+                for item in items
+            ]
+            result = ApiResult(code=200, message='成功搜索到商品,从搜索库中查询', data=items_list)
+            return result.make_response()
 
     cookies = Cookie.query.filter_by(user_id=user_id, type=1).all()
     if not cookies:
-        result = ApiResult(code=401, message="您没有设置淘宝和京东的账号，无法爬取数据")
+        result = ApiResult(code=401, message="您没有设置淘宝的账号，无法爬取淘宝商品数据")
         return result.make_response()
-
     cookies_list = [cookie.cookie for cookie in cookies]
 
     arg = {
@@ -218,7 +261,128 @@ def search():
         # 'pages': my_config['pages'],
         'searchText': search_text
     }
+    
+    items_list = spider_taobao(arg)
 
-    spider_taobao(arg)
-    result = ApiResult(code=200, message='搜索成功')
+    cookies = Cookie.query.filter_by(user_id=user_id, type=2).all()
+    if not cookies:
+        result = ApiResult(code=401, message="您没有设置京东的账号，无法爬取京东商品数据")
+        return result.make_response()
+    cookies_list = [cookie.cookie for cookie in cookies]
+    arg['cookies'] = cookies_list
+    items_list += spider_jd(arg)
+
+    items = []
+    for item_data in items_list:
+        item = Item(
+            title=item_data['title'],
+            type=item_data['type'],
+            price=item_data['price'],
+            nick=item_data['nick'],
+            item_url=item_data['item_url'],
+            img_url=item_data['img_url'],
+            procity=item_data['procity'],
+            specification=item_data['specification']
+        )
+        items.append(item)
+    db.session.add_all(items)
+    db.session.flush()
+
+    search = Search(user_id=user_id, search_text=search_text)
+    db.session.add(search)
+    db.session.flush()
+
+    for item in items:
+        item_search = Item_search(item_id=item.item_id, search_id=search.search_id)
+        db.session.add(item_search)
+
+    db.session.commit()
+
+    result = ApiResult(code=200, message='搜索成功', data=items_list)
     return result.make_response()
+
+
+@bp.route('/getDoc', methods=['GET'])
+def get_doc():
+    # 获取当前文件的绝对路径
+    current_file_path = os.path.abspath(__file__)
+
+    # 获取当前文件所在的目录路径
+    current_dir_path = os.path.dirname(current_file_path)
+
+    # 构建 doc.md 的相对路径
+    doc_md_path = os.path.join(current_dir_path, '..', 'doc.md')
+
+    # 打开文件并读取内容
+    with open(doc_md_path, 'r', encoding='utf-8') as file:
+        markdown_content = file.read()
+
+    print(markdown_content)
+    result = ApiResult(code=200, message='获取数据成功', data=markdown_content)
+    return result.make_response()
+
+
+@bp.route('/history', methods=['GET'])
+def get_history():
+    data = request.get_json()
+    user_id = data['user_id']
+    searchs = Search.query.filter_by(user_id=user_id).all()
+    history = {
+        'search_text': [search.search_text for search in searchs],
+    }
+
+
+@bp.route('/subscribe', methods=['POST'])
+def subscribe():
+    data = request.get_json()
+    user_id = data['user_id']
+    item_id = data['item_id']
+    subscribe = Subscribe(user_id=user_id, item_id=item_id)
+    db.session.add(subscribe)
+    db.session.commit()
+
+    result = ApiResult(code=200, message='订阅成功')
+    return result.make_response()
+
+
+@bp.route('/checkSubscribe', methods=['POST'])
+def check_subscribe():
+    data = request.get_json()
+    user_id = data['user_id']
+    user = User.query.filter_by(id=user_id).first()
+
+    cookies = Cookie.query.filter_by(user_id=user_id, type=1).all()
+    if not cookies:
+        result = ApiResult(code=401, message="您没有设置淘宝的账号，无法爬取淘宝商品数据")
+        return result.make_response()
+    cookies_tb_list = [cookie.cookie for cookie in cookies]
+
+    cookies = Cookie.query.filter_by(user_id=user_id, type=2).all()
+    if not cookies:
+        result = ApiResult(code=401, message="您没有设置京东的账号，无法爬取京东商品数据")
+        return result.make_response()
+    cookies_jd_list = [cookie.cookie for cookie in cookies]
+
+    subscribes = Subscribe.query.filter_by(user_id=user_id).all()
+    item_ids = [subscribe.item_id for subscribe in subscribes]
+    items = Item.query.filter(Item.item_id.in_(item_ids)).all()
+
+    content = f'尊敬的用户{user.name}, 您关注的如下商品已经降价:' + os.linesep
+    i = 0
+    for item in items:
+        if item.type == 1:
+            new_price = get_tb_price(item.item_url, cookies_jd_list)
+        else:
+            new_price = get_jd_price(item.item_url, cookies_tb_list)
+
+        if new_price < item.price:
+            i = i + 1
+            content += f'{i}: {item.title}价格已下降至{new_price}元，请及时购买' + os.linesep
+
+    if i == 0:
+        result = ApiResult(code=200, message='没有检测到商品降价')
+        return result.make_response()
+    else:
+        send_email({'email': user.email, 'content': content})
+        result = ApiResult(code=200, message='检测到商品降价, 具体信息已发送给您的邮箱')
+        return result.make_response()

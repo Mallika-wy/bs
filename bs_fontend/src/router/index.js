@@ -11,6 +11,7 @@ import Search from "@/views/Search.vue"
 import User from "@/views/User.vue"
 import Item from "@/views/Item.vue"
 import Document from "@/views/Document.vue"
+import LoginTJ from '@/views/LoginTJ.vue'
 import NotFount from "@/views/404.vue"
 
 const routes = [
@@ -42,6 +43,12 @@ const routes = [
                 component: User,
                 meta: {
                     title: '个人中心-ZJU B/S'
+                }
+            }, {
+                path: '/loginTJ',
+                component: LoginTJ,
+                meta: {
+                    title: '京东淘宝登录-ZJU B/S'
                 }
             }]
     },

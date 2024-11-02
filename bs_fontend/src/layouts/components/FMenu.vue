@@ -25,6 +25,12 @@
                 </el-icon>
                 <span>用户中心</span>
             </el-menu-item>
+            <el-menu-item index="/loginTJ">
+                <el-icon>
+                    <setting />
+                </el-icon>
+                <span>淘宝京东登录</span>
+            </el-menu-item>
         </el-menu>
     </div>
 </template>
@@ -42,12 +48,16 @@ const handleSelect = (e)=>{
 
 <style>
 .f-menu {
-    transition: all 0.2s;
-    top: 64px;
-    bottom: 0;
+    transition: all 0.5s;
+    top: 80px;
+    bottom: 0px;
     left: 0;
+    width: 170px;
     overflow-y: auto;
     overflow-x: hidden;
     @apply shadow-md fixed bg-light-50;
+}
+.f-menu::-webkit-scrollbar{
+    width: 0px;
 }
 </style>

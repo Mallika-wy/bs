@@ -1,12 +1,12 @@
 <template>
 
-  <el-row style="min-height: 100vh;" class="bg-indigo-500">
-    <el-col :lg="16" :md="12" class="flex items-center justify-center flex-col">
-      <div class="font-bold text-5xl text-light-50 mb-8">商品比价网站</div>
-      <div class="text-1xl text-gray-200 mt-8">浙江大学2024-2025秋冬学期B/S体系软件设计 课程项目</div>
+  <el-row class="login-container">
+    <el-col :lg="16" :md="12" class="left">
+      <div>商品比价网站</div>
+      <div>浙江大学2024-2025秋冬学期B/S体系软件设计 课程项目</div>
     </el-col>
-    <el-col :lg="8" :md="12" class="bg-light-50 flex items-center justify-center flex-col">
-      <h2 class="font-bold text-3xl text-gray-800 mb-6">用户登录</h2>
+    <el-col :lg="8" :md="12" class="right">
+      <h2 class="title">用户登录</h2>
       <el-form ref="formRef" :rules="rules" :model="form">
         <el-form-item prop="name">
           <el-input v-model="form.name" placeholder="请输入用户名">
@@ -27,8 +27,8 @@
           </el-input>
         </el-form-item>
         <el-form-item class="mt-8">
-          <el-button type="primary" @click="onSubmit" :loading="loading">登录</el-button>
-          <el-button>注册</el-button>
+          <el-button round color="#626aef" class="w-[100px]" type="primary" @click="onSubmit" :loading="loading">登录</el-button>
+          <el-button round color="#626aef" class="w-[100px]" type="primary" @click="register">注册</el-button>
         </el-form-item>
       </el-form>
     </el-col>
@@ -100,6 +100,35 @@ const onSubmit = () => {
       });
   })
 }
+
+const register = () => {
+  router.push('/register')
+}
 </script>
 
-<style></style>
+<style>
+.login-container {
+  @apply min-h-screen bg-indigo-500;
+}
+
+.login-container .left,
+.login-container .right {
+  @apply flex items-center justify-center flex-col;
+}
+
+.login-container .right {
+  @apply bg-light-50 flex-col;
+}
+
+.left>div:first-child {
+  @apply font-bold text-5xl text-light-50 mb-8;
+}
+
+.left>div:last-child {
+  @apply text-1xl text-gray-200 mt-8;
+}
+
+.right .title {
+  @apply font-bold text-3xl text-gray-800 mb-6;
+}
+</style>
