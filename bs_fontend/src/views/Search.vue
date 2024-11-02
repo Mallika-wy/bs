@@ -1,27 +1,74 @@
 <template>
-    <el-input v-model="form.search_text" placeholder="输入商品名称">
-        <template #prefix>
-            <el-icon>
-                <Search />
-            </el-icon>
-        </template>
-    </el-input>
+    <el-scrollbar height="100%" class="scrollbar">
+        <div class="search-container">
+            <el-input v-model="form.search_text" placeholder="输入商品名称">
+                <template #prefix>
+                    <el-icon>
+                        <Search />
+                    </el-icon>
+                </template>
+            </el-input>
+            <el-button type="primary" @click="search">搜索</el-button>
+        </div>
 
-    <el-button type="primary" @click="search">搜索</el-button>
+        <div class="title">商品列表</div>
+
+        <el-row :gutter="20">
+            <el-col :span="8" v-for="item in form.item_list" :key="item.id">
+                <el-card>
+                    <img :src="item.img_url" style="width: 100%; height: 250px; object-fit: cover;" />
+                    <div style="margin-left: 10px; text-align: start; font-size: 16px;">
+                        <p style="padding: 2.5px;"><span style="font-weight: bold;">名称：</span>{{ item.title }}</p>
+                        <p style="padding: 2.5px;">
+                            <span style="font-weight: bold;">价格: </span>
+                            <span v-if="item.price === -1">进入详情页查看价格</span>
+                            <span v-else>{{ item.price }}</span>
+                        </p>
+                        <p style="padding: 2.5px;">
+                            <span style="font-weight: bold;">平台：</span>
+                            <span v-if="item.type === 1">淘宝</span>
+                            <span v-else>京东</span>
+                        </p>
+                    </div>
+                    <el-button type="primary" @click="showDetail(item)">查看详情</el-button>
+                </el-card>
+            </el-col>
+        </el-row>
+    </el-scrollbar>
+    <el-dialog v-model="dialogDetailVisible" title="商品详情" width="50%">
+        <div>
+            <img :src="form.detail.img_url" alt="商品图片"
+                style="width: 100%; height: auto; display: block; margin-bottom: 20px;" />
+            <h2>{{ form.detail.title }}</h2>
+            <!-- 展示价格 -->
+            <p><strong>价格：</strong>{{ form.detail.price }}</p>
+            <!-- 展示商家昵称 -->
+            <p><strong>商家昵称：</strong>{{ form.detail.nick }}</p>
+            <!-- 展示省份 -->
+            <p><strong>省份：</strong>{{ form.detail.procity }}</p>
+            <p><strong>商品原链接：</strong><a :href="form.detail.item_url" target="_blank">{{ form.detail.item_url }}</a></p>
+            <p><strong>历史价格查询：</strong><img :src="'data:image/png;base64,' + form.detail.history_image" alt="历史价格查询" /></p>
+            <el-button @click="subscribe">降价通知</el-button>
+            <el-button @click="closeDetail">关闭</el-button>
+        </div>
+    </el-dialog>
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useStore } from 'vuex'
 
 import { notify } from '@/composables/utils'
-import { searchItem } from '@/api/api';
+import { searchItems, searchItem, subscribeItem } from '@/api/api';
 
 const store = useStore()
 const User = store.state.user;
 
+const dialogDetailVisible = ref(false)
 const form = reactive({
-    search_text: ''
+    search_text: '',
+    item_list: [],
+    detail: {}
 })
 
 const search = () => {
@@ -30,14 +77,81 @@ const search = () => {
         return;
     }
 
-    searchItem(User.id, form.search_text)
+    searchItems(User.id, form.search_text)
         .then(res => {
             if (res.code === 200) {
                 notify('success', res.message)
-                router.push('/SearchResult')
+                form.item_list = res.data
             } else {
                 notify('error', res.message)
             }
         })
 }
+
+const showDetail = (item) => {
+    console.log(item)
+    searchItem(User.id, item.item_id)
+        .then(res => {
+            if (res.code === 200) {
+                form.detail = res.data
+                console.log(form.detail)
+                notify('success', res.message)
+            } else {
+                notify('error', res.message)
+            }
+        })
+    dialogDetailVisible.value = true
+}
+
+const closeDetail = () => {
+    dialogDetailVisible.value = false
+    form.detail = {}
+}
+
+const subscribe = () => {
+    console.log(form.detail)
+    subscribeItem(User.id, form.detail.id)
+        .then(res => {
+            console.log(res)
+            if (res.code === 200) {
+                notify('success', res.message)
+            } else {
+                notify('error', res.message)
+            }
+        })
+}
+
 </script>
+
+<style scoped>
+.scrollbar {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    margin: 10px;
+    text-align: center;
+    border-radius: 4px;
+}
+
+.search-container {
+    display: flex;
+    /* 使用flex布局 */
+    align-items: center;
+    /* 垂直居中 */
+    gap: 18px;
+    /* 元素之间的间距 */
+}
+
+.title {
+    margin-top: 20px;
+    /* margin-left: 20px; */
+    font-size: 2em;
+    /* 字体大小 */
+    font-weight: 500;
+    /* 字体权重，已调整为不那么粗 */
+    color: #333;
+    /* 文本颜色，可以根据需要调整 */
+    text-align: left;
+    /* 文本对齐方式 */
+}
+</style>

@@ -95,18 +95,17 @@ const startLoginJd = () => {
     showRefresh.value = true;
     showImage.value = true;
     const User = store.state.user;
-    // notify('success', "chenggong")
-    // addJd(User.id)
-    //     .then(res => {
-    //         console.log(res)
-    //         if (res.code === 200) {
-    //             notify('success', res.message)
-    //         } else {
-    //             notify('error', res.message)
-    //         }
-    //         showRefresh.value = false;
-    //         showImage.value = false
-    //     })
+    addJd(User.id)
+        .then(res => {
+            console.log(res)
+            if (res.code === 200) {
+                notify('success', res.message)
+            } else {
+                notify('error', res.message)
+            }
+            showRefresh.value = false;
+            showImage.value = false
+        })
 }
 
 const refreshQrcode = () => {

@@ -38,25 +38,26 @@ class Cookie(db.Model):
 
 
 class Item(db.Model):
-	__tablename__ = 'item'
-    
-	item_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-	real_id = db.Column(db.Integer, nullable=False)
-	title = db.Column(db.String(70), nullable=False)
-	type = db.Column(db.Integer, nullable=False)
-	price = db.Column(db.Float, nullable=False)
-	nick = db.Column(db.String(30), nullable=False)
-	item_url = db.Column(db.String(100), nullable=False)
-	img_url = db.Column(db.String(100), nullable=False)
-	procity = db.Column(db.String(30), nullable=False)
+    __tablename__ = 'item'
+
+    item_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    real_id = db.Column(db.BigInteger, nullable=False)
+    title = db.Column(db.String(300), nullable=False)
+    type = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    nick = db.Column(db.String(100), nullable=False)
+    item_url = db.Column(db.String(200), nullable=False)
+    img_url = db.Column(db.String(200), nullable=False)
+    procity = db.Column(db.String(30), nullable=False)
+    specification = db.Column(db.String(200), nullable=False)
      
-	 
+
 class Search(db.Model):
-	__tablename__ = 'search'
-     
-	search_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-	user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-	search_text = db.Column(db.String(50), nullable=False)
+    __tablename__ = 'search'
+
+    search_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    search_text = db.Column(db.String(50), nullable=False)
 
 
 class Item_search(db.Model):
@@ -67,8 +68,8 @@ class Item_search(db.Model):
 
 
 class Subscribe(db.Model):
-     __tablename__ = 'subscribe'
-     
-     subscribe_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-     item_id = db.Column(db.Integer, db.ForeignKey('item.item_id'))
+    __tablename__ = 'subscribe'
+
+    subscribe_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    item_id = db.Column(db.Integer, db.ForeignKey('item.item_id'))

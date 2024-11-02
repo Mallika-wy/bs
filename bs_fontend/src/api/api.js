@@ -24,19 +24,29 @@ export function addTb(user_id, info_tb) {
     })
 }
 
-export function test() {
-    return axios.post("/test", {
+
+export function searchItems(id, searchText) {
+    return axios.get("/search", {
+        params: {
+            id: id,
+            searchText: searchText
+        }
     })
 }
 
-
-
-export function searchItem(id, searchText) {
-    return axios.get("/search", {
+export function searchItem(user_id, item_id) {
+    return axios.get("/searchItem", {
         params: {
-            id: id, // 假设的 ID 值
-            searchText: searchText // 假设的搜索文本
+            user_id: user_id,
+            item_id: item_id
         }
+    })
+}
+
+export function subscribeItem(user_id, item_id) {
+    return axios.post("/subscribe", {
+        user_id,
+        item_id
     })
 }
 
@@ -63,5 +73,14 @@ export function getDoc() {
 export function register(user_info_dict) {
     return axios.post("/register", {
         user_info_dict
+    })
+}
+
+
+export function history(user_id) {
+    return axios.get("/history", {
+        params: {
+            user_id: user_id
+        }
     })
 }

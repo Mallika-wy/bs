@@ -9,7 +9,7 @@ from ..models import User, Account, Cookie, Item, Item_search, Search, Subscribe
 from ..utils.ApiResult import ApiResult
 from ..utils.email import send_email
 from ..utils.drission import get_tb_cookies, spider_taobao, get_jd_qrcode_and_cookie, \
-    spider_jd, get_tb_price, get_jd_price
+    spider_jd, get_tb_price, get_jd_price, price_history
 
 
 bp = Blueprint('main', __name__)
@@ -224,8 +224,8 @@ def search():
         search_id = -1
         max_similarity = -1
         for search in searchs:
-            similarity = fuzz(search_text, search.search_text)
-            if similarity > current_app.config['fazz_threshold']:
+            similarity = fuzz.ratio(search_text, search.search_text)
+            if similarity > current_app.config['FUZZ_THRESHOLD']:
                 if max_similarity < similarity:
                     max_similarity = similarity
                     search_id = search.search_id
@@ -235,7 +235,8 @@ def search():
             items = Item.query.filter(Item.item_id.in_(item_ids)).all()
             items_list = [
                 {
-                    'item_id': item.real_id,
+                    'item_id': item.item_id,
+                    'real_id': item.real_id,
                     'title': item.title,
                     'type': item.type,
                     'price': item.price,
@@ -275,15 +276,17 @@ def search():
     items = []
     for item_data in items_list:
         item = Item(
+            real_id=item_data['real_id'],
             title=item_data['title'],
-            type=item_data['type'],
-            price=item_data['price'],
-            nick=item_data['nick'],
             item_url=item_data['item_url'],
             img_url=item_data['img_url'],
+            price=item_data['price'],
+            nick=item_data['nick'],
             procity=item_data['procity'],
-            specification=item_data['specification']
+            specification=item_data['specification'],
+            type=item_data['type'],
         )
+        print(item_data['item_url'])
         items.append(item)
     db.session.add_all(items)
     db.session.flush()
@@ -298,6 +301,20 @@ def search():
 
     db.session.commit()
 
+    items_list = [
+        {
+            'item_id': item.item_id,
+            'real_id': item.real_id,
+            'title': item.title,
+            'type': item.type,
+            'price': item.price,
+            'nick': item.nick,
+            'item_url': item.item_url,
+            'img_url': item.img_url,
+            'procity': item.procity
+        }
+        for item in items
+    ]
     result = ApiResult(code=200, message='搜索成功', data=items_list)
     return result.make_response()
 
@@ -324,12 +341,19 @@ def get_doc():
 
 @bp.route('/history', methods=['GET'])
 def get_history():
-    data = request.get_json()
-    user_id = data['user_id']
+    user_id = request.args.get('user_id')
     searchs = Search.query.filter_by(user_id=user_id).all()
-    history = {
-        'search_text': [search.search_text for search in searchs],
-    }
+
+    return_data = []
+    for search in searchs:
+        search_data = {'search_id': search.search_id, 'search_text': search.search_text}
+        item_searchs = Item_search.query.filter_by(search_id=search.search_id).all()
+        item_ids = [item_searchs.item_id for item_searchs in item_searchs]
+        search_data['item_ids'] = item_ids
+        search_data['num_items'] = len(item_ids)
+        return_data.append(search_data)
+    result = ApiResult(code=200, message='查找记录成功', data=return_data)
+    return result.make_response()
 
 
 @bp.route('/subscribe', methods=['POST'])
@@ -386,3 +410,47 @@ def check_subscribe():
         send_email({'email': user.email, 'content': content})
         result = ApiResult(code=200, message='检测到商品降价, 具体信息已发送给您的邮箱')
         return result.make_response()
+
+
+@bp.route('/searchItem', methods=['GET'])
+def search_item():
+    user_id = request.args.get('user_id')
+    item_id = request.args.get('item_id')
+    #  根据id来查找item表中特定数据
+    item = Item.query.filter_by(item_id=item_id).first()
+    if item is None:
+        result = ApiResult(code=401, message='没有找到该商品')
+        return result.make_response()
+    if item.price == -1:
+        cookies = Cookie.query.filter_by(user_id=user_id, type=1).all()
+        if not cookies:
+            result = ApiResult(code=401, message="您没有设置淘宝的账号，无法爬取淘宝商品数据")
+            return result.make_response()
+        cookies_tb_list = [cookie.cookie for cookie in cookies]
+        price = get_tb_price(item.item_url, cookies_tb_list)
+        item.price = price
+        db.session.add(item)
+    data = {}
+    if 'tmall' in item.item_url:
+        data = price_history('tmall', item.real_id)
+    elif 'taobao' in item.item_url:
+        data = price_history('taobao', item.real_id)
+    elif 'jd' in item.item_url:
+        data = price_history('jd', item.real_id)
+    return_data = {
+        'id': item.item_id,
+        'real_id': item.real_id,
+        'title': item.title,
+        'price': item.price,
+        'nick': item.nick,
+        'item_url': item.item_url,
+        'img_url': item.img_url,
+        'procity': item.procity,
+        'specification': item.specification
+    }
+    if not data['OK']:
+        return_data['history_image'] = ''
+    else:
+        return_data['history_image'] =data['price_image']
+    result = ApiResult(code=200, message='详情获取成功', data=return_data)
+    return result.make_response()

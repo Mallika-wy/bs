@@ -7,9 +7,9 @@ class Config:
 	SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 	# 发送邮箱smtp设置
-	mail_host = "smtp.163.com"           # 设置服务器
-	mail_post = 465
-	mail_user = "18205098642@163.com"     # 用户名
-	mail_pass = "ZWqHSNX6XvtBiXXb"      # 口令
+	MAIL_HOST = "smtp.163.com"  # 设置服务器
+	MAIL_PORT = 465
+	MAIL_USER = "18205098642@163.com"  # 用户名
+	MAIL_PASS = "ZWqHSNX6XvtBiXXb"  # 口令
 
-	fazz_threshold = 80
+	FUZZ_THRESHOLD = 50

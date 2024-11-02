@@ -4,6 +4,7 @@ import DrissionPage.errors
 from DrissionPage import ChromiumPage
 import re
 import json
+from bs4 import BeautifulSoup
 
 from ..plugin import message_queue
 
@@ -19,7 +20,15 @@ def get_tb_cookies(name, password):
     cp.ele('css:#fm-login-password').input(password)
     cp.ele('css:.fm-button.fm-submit.password-login').click()
 
+    time.sleep(2)
+
     return_data = {}
+    error_element = cp.ele('css:.login-error-msg', timeout=1)
+    if error_element:
+        return_data['OK'] = False
+        cp.close()
+        return return_data
+
     cookies_string = []
     cookies = cp.cookies()
     for cookie in cookies:
@@ -45,11 +54,7 @@ def spider_taobao(arg):
     cp.ele('css:#q').input(arg['searchText'])
     cp.ele('css:.btn-search.tb-bg').click()
     cp.listen.start('h5/mtop.relationrecommend.wirelessrecommend.recommend/2.0')
-    cp.refresh()
-    list_data_packet = cp.listen.wait(count=2)
-
-    data_packet = list_data_packet[1]
-    response = data_packet.response
+    response = cp.listen.wait().response
     mtopjsonp = response.body
     mtopjson = re.findall('mtopjsonp\d+\((.*)\)', mtopjsonp)[0]
     mtop_data = json.loads(mtopjson)
@@ -57,8 +62,15 @@ def spider_taobao(arg):
 
     return_data = []
     for item in itemsArray:
+        soup = BeautifulSoup(item['title'], 'lxml')
+        item['title'] = soup.get_text()
+
+        if 'tmall' in item['auctionURL']:
+            item['price'] = -1
+            continue
+
         item_data = {
-            'id': item['item_id'],
+            'real_id': item['item_id'],
             'title': item['title'],
             'item_url': item['auctionURL'],
             'img_url': item['pic_path'],
@@ -76,6 +88,7 @@ def spider_taobao(arg):
             specification = ""
         item_data['specification'] = specification
         return_data.append(item_data)
+    cp.close()
     return return_data
 
 
@@ -133,33 +146,42 @@ def spider_jd(arg):
         img_url = item('xpath://div[contains(@class,"p-img")]/a/img').attrs['data-lazy-img']
         price = item('xpath://div[contains(@class,"p-price")]/strong/i').text
         item_data = {
-            'id': id,
+            'real_id': id,
             'title': title,
             'item_url': item_url,
-            'pic_url': img_url,
+            'img_url': img_url,
             'price': price,
             'nick': nick,
             'procity': '',
-            'structuredUSPInfo': '',
+            'specification': '',
             'type': 2
         }
         return_data.append(item_data)
+    cp.close()
     return return_data
 
 
-def price_history(domain, item_id):
+def price_history(domain, real_id):
     cp = ChromiumPage()
     if domain == 'tmall':
-        url = f'http://detail.tmallvvv.com/item.htm?id={item_id}'
+        url = f'http://detail.tmallvvv.com/item.htm?id={real_id}'
     elif domain == 'jd':
-        url = f'http://item.jdvvv.com/{item_id}.html'
+        url = f'http://item.jdvvv.com/{real_id}.html'
     else:
-        url = f'http://item.taobao.com/item.htm?id={item_id}'
+        url = f'http://item.taobaovvv.com/item.htm?id={real_id}'
     cp.get(url)
     time.sleep(2)
-    canvas_element = cp.ele('@id=container')
-    price_image = canvas_element.get_screenshot(as_base64=True)
-    return price_image
+    return_data = {}
+    not_found = cp.ele('@id=loadingId', timeout=2)
+    if not_found:
+        return_data['OK'] = False
+    else:
+        canvas_element = cp.ele('@id=container')
+        price_image = canvas_element.get_screenshot(as_base64=True)
+        return_data['price_image'] = price_image
+        return_data['OK'] = True
+    cp.close()
+    return return_data
 
 
 def get_tb_price(url, cookie):
