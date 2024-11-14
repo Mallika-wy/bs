@@ -1,0 +1,44 @@
+services:
+  backend:
+    build: 
+      context: ./bs_backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: mysql+pymysql://root:root123@db/bs
+    networks:
+      - webnet
+
+  frontend:
+    build: 
+      context: ./bs_frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - webnet
+
+  db:
+    image: mysql:8.0
+    container_name: bs_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: bs
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - webnet
+
+volumes:
+  db-data:
+
+networks:
+  webnet:
+    driver: bridge

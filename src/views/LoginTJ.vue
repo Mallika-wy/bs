@@ -52,7 +52,7 @@ import { useStore } from 'vuex';
 import { ref, reactive } from 'vue';
 
 import { notify } from '@/composables/utils'
-import { addTb, addJd, getQrcode, test } from '@/api/api';
+import { addTb, addJd, getQrcode } from '@/api/api';
 
 const store = useStore();
 

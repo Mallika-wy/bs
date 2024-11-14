@@ -140,7 +140,7 @@ const submitForm = () => {
         register(user_info_dict)
             .then(res => {
                 console.log(res);
-                if (res.code === 200) {
+                if (res.code === 201) {
                     setToken(res.data.cookie)
                     store.commit('setUser', res.data)
                     console.log(res.data.id);

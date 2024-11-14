@@ -1,16 +1,16 @@
 from flask import Flask
 from .config import Config
-from .plugin import db, cors
+from .plugin import db, cors, siwa
 
 
 def _load_plugins(app):
     db.init_app(app)
     cors.init_app(app)
+    siwa.init_app(app)
 
 
 def _load_config(app):
     app.config.from_object(Config)
-    print(app.config)
 
 
 def _init_blueprint(app):

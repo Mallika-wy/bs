@@ -3,8 +3,9 @@ import bcrypt
 import time
 import os
 from fuzzywuzzy import fuzz
+from queue import Empty
 
-from ..plugin import db, message_queue
+from ..plugin import db, message_queue, siwa
 from ..models import User, Account, Cookie, Item, Item_search, Search, Subscribe
 from ..utils.ApiResult import ApiResult
 from ..utils.email import send_email
@@ -16,6 +17,7 @@ bp = Blueprint('main', __name__)
 
 
 @bp.route('/login', methods=['POST'])
+@siwa.doc()
 def login():
     data = request.get_json()
     print(data)
@@ -24,10 +26,7 @@ def login():
 
     user = User.query.filter_by(name=name).first()
     if user and user.password == password:
-        password_bytes = password.encode('utf-8')
-        salt = bcrypt.gensalt()
-        hashed_password = bcrypt.hashpw(password_bytes, salt)
-        cookie = "%d|%s|%s" % (user.id, user.name, hashed_password)
+        cookie = "%d|%s|%s" % (user.id, user.name, user.password)
         data = {
             'id': user.id,
             'name': user.name,
@@ -48,6 +47,7 @@ def login():
 
 
 @bp.route('/register', methods=['POST'])
+@siwa.doc()
 def register():
     data = request.get_json()['user_info_dict']
     name = data['name']
@@ -59,12 +59,12 @@ def register():
 
     user = User.query.filter_by(name=name).first()
     if user:
-        result = ApiResult(code=401, message='User name already exists')
+        result = ApiResult(code=409, message='User name already exists')
         return result.make_response()
 
     user = User.query.filter_by(email=email).first()
     if user:
-        result = ApiResult(code=401, message='Email already exists')
+        result = ApiResult(code=409, message='Email already exists')
         return result.make_response()
 
     new_user = User(name=name, password=password, email=email, sex=sex, address=address, phone=phone)
@@ -78,13 +78,14 @@ def register():
             'phone': new_user.phone,
             'address': new_user.address
         }
-        result = ApiResult(code=200, message='User created successfully', data=data)
+        result = ApiResult(code=201, message='User created successfully', data=data)
         return result.make_response()
     except Exception as e:
         db.session.rollback()
 
 
 @bp.route('/modifyUser', methods=['POST'])
+@siwa.doc()
 def modify_user():
     data = request.get_json()
     user_id = data.get('id')
@@ -93,12 +94,12 @@ def modify_user():
     if user.name != modified_user['name']:
         count = User.query.filter_by(name=modified_user['name']).count()
         if count != 0:
-            result = ApiResult(code=401, message='This name is already taken')
+            result = ApiResult(code=409, message='This name is already taken')
             return result.make_response()
     if user.email != modified_user['email']:
         count = User.query.filter_by(email=modified_user['email'])
         if count != 0:
-            result = ApiResult(code=401, message='This email is already taken')
+            result = ApiResult(code=409, message='This email is already taken')
             return result.make_response()
 
     user.name = modified_user['name']
@@ -120,6 +121,7 @@ def modify_user():
 
 
 @bp.route('/addTb', methods=['POST'])
+@siwa.doc()
 def add_tb_account():
     data = request.get_json()
     user_id = data['user_id']
@@ -160,6 +162,7 @@ def add_tb_account():
 
 
 @bp.route('/addJd', methods=['POST'])
+@siwa.doc()
 def add_jd_account():
     data = request.get_json()
     user_id = data['user_id']
@@ -197,24 +200,18 @@ def add_jd_account():
 
 
 @bp.route('/getQrcode', methods=['GET'])
+@siwa.doc()
 def get_qrcode():
-    timeout = 20
-    end_time = time.time() + timeout
-    qrcode_base64 = ''
-    while time.time() < end_time:
+    try:
         qrcode_base64 = message_queue.get(block=False)
-        if qrcode_base64:
-            break
-        time.sleep(1)  # 每隔1秒检查一次
-    if not qrcode_base64:
-        result = ApiResult(code=401, message="没有获得到二维码")
-        return result.make_response()
-
-    result = ApiResult(code=200, message='成功得到二维码', data=qrcode_base64)
+        result = ApiResult(code=200, message='成功得到二维码', data=qrcode_base64)
+    except Empty:
+        result = ApiResult(code=401, message="二维码还没有爬取到，请等一会儿")
     return result.make_response()
 
 
 @bp.route('/search', methods=['GET'])
+@siwa.doc()
 def search():
     user_id = request.args.get('id')
     search_text = request.args.get('searchText')
@@ -263,7 +260,8 @@ def search():
         'searchText': search_text
     }
     
-    items_list = spider_taobao(arg)
+    # items_list = spider_taobao(arg)
+    items_list = []
 
     cookies = Cookie.query.filter_by(user_id=user_id, type=2).all()
     if not cookies:
@@ -320,6 +318,7 @@ def search():
 
 
 @bp.route('/getDoc', methods=['GET'])
+@siwa.doc()
 def get_doc():
     # 获取当前文件的绝对路径
     current_file_path = os.path.abspath(__file__)
@@ -340,6 +339,7 @@ def get_doc():
 
 
 @bp.route('/history', methods=['GET'])
+@siwa.doc()
 def get_history():
     user_id = request.args.get('user_id')
     searchs = Search.query.filter_by(user_id=user_id).all()
@@ -357,10 +357,22 @@ def get_history():
 
 
 @bp.route('/subscribe', methods=['POST'])
+@siwa.doc()
 def subscribe():
     data = request.get_json()
     user_id = data['user_id']
     item_id = data['item_id']
+
+    user = User.query.filter_by(id=user_id).first()
+    if not user:
+        result = ApiResult(code=409, message='该用户不存在')
+        return result.make_response()
+
+    item = Item.query.filter_by(id=item_id).first()
+    if not item:
+        result = ApiResult(code=409, message='该商品不存在')
+        return result.make_response()
+
     subscribe = Subscribe(user_id=user_id, item_id=item_id)
     db.session.add(subscribe)
     db.session.commit()
@@ -370,6 +382,7 @@ def subscribe():
 
 
 @bp.route('/checkSubscribe', methods=['POST'])
+@siwa.doc()
 def check_subscribe():
     data = request.get_json()
     user_id = data['user_id']
@@ -413,6 +426,7 @@ def check_subscribe():
 
 
 @bp.route('/searchItem', methods=['GET'])
+@siwa.doc()
 def search_item():
     user_id = request.args.get('user_id')
     item_id = request.args.get('item_id')

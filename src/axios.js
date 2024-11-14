@@ -3,7 +3,8 @@ import { notify } from '@/composables/utils'
 // import { useCookies } from '@vueuse/integrations/useCookies';
 
 const service = axios.create({
-  baseURL: 'http://127.0.0.1:5000'
+  // baseURL: 'http://127.0.0.1:5000'
+  baseURL: 'http://localhost:5000'
 })
 
 // 添加请求拦截器
@@ -23,8 +24,6 @@ service.interceptors.request.use(function (config) {
 
 // 添加响应拦截器
 service.interceptors.response.use(function (response) {
-  // 对响应数据做点什么
-  console.log(response)
   return response.data;
 }, function (error) {
   // 对响应错误做点什么
