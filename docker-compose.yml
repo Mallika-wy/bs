@@ -7,38 +7,51 @@ services:
       - "5000:5000"
     depends_on:
       - db
-    environment:
-      DATABASE_URL: mysql+pymysql://root:root123@db/bs
+    # volumes:
+    #   - ./logs/app.log :/app/app.log
     networks:
       - webnet
-
+      
   frontend:
-    build: 
+    build:
       context: ./bs_frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "80:80" # 将前端服务暴露在80端口，可以根据需要调整
     depends_on:
       - backend
     networks:
       - webnet
-
   db:
-    image: mysql:8.0
+    image: mysql:5.7
     container_name: bs_mysql
     environment:
       MYSQL_ROOT_PASSWORD: root123
       MYSQL_DATABASE: bs
     volumes:
-      - db-data:/var/lib/mysql
+      - ./db-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "3306:3306"
     networks:
       - webnet
 
-volumes:
-  db-data:
+# volumes:
+#   db-data:
 
 networks:
   webnet:
     driver: bridge
+
+
+
+  # frontend:
+  #   build: 
+  #     context: ./bs_frontend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "5173:5173"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - webnet

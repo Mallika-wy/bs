@@ -11,6 +11,7 @@ def _load_plugins(app):
 
 def _load_config(app):
     app.config.from_object(Config)
+    # print(app.config)
 
 
 def _init_blueprint(app):

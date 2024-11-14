@@ -5,11 +5,11 @@ import os
 from fuzzywuzzy import fuzz
 from queue import Empty
 
-from ..plugin import db, message_queue, siwa
+from ..plugin import db, message_queue, siwa, logger
 from ..models import User, Account, Cookie, Item, Item_search, Search, Subscribe
 from ..utils.ApiResult import ApiResult
 from ..utils.email import send_email
-from ..utils.drission import get_tb_cookies, spider_taobao, get_jd_qrcode_and_cookie, \
+from ..utils.drission import get_tb_cookies, get_tb_qrcode_and_cookie, spider_taobao, get_jd_qrcode_and_cookie, \
     spider_jd, get_tb_price, get_jd_price, price_history
 
 
@@ -123,13 +123,49 @@ def modify_user():
 @bp.route('/addTb', methods=['POST'])
 @siwa.doc()
 def add_tb_account():
+    # data = request.get_json()
+    # user_id = data['user_id']
+    # info_tb = data['info_tb']
+
+    # data = get_tb_cookies(info_tb['t_name'], info_tb['t_password'])
+    # if not data['OK']:
+    #     result = ApiResult(code=401, message='淘宝账号添加失败，可能账号密码错误')
+    #     return result.make_response()
+
+    # cookies_to_delete = Cookie.query.filter_by(user_id=user_id, type=1).all()
+    # for cookie in cookies_to_delete:
+    #     db.session.delete(cookie)
+    # db.session.commit()
+
+    # cookies_string = data['cookies_string']
+    # for cookie_string in cookies_string:
+    #     new_cookie = Cookie(user_id=user_id, type=1, cookie=cookie_string)
+    #     db.session.add(new_cookie)
+    # db.session.commit()
+
+    # old_account = Account.query.get(user_id)
+    # if old_account:
+    #     old_account.tb_name = info_tb['t_name']
+    #     old_account.tb_password = info_tb['t_password']
+    #     db.session.commit()
+    # else:
+    #     new_account = Account(
+    #         user_id=user_id,
+    #         tb_name=info_tb['t_name'],
+    #         tb_password=info_tb['t_password']
+    #     )
+    #     db.session.add(new_account)
+    #     db.session.commit()
+
+    # result = ApiResult(code=200, message='添加淘宝账号成功')
+    # return result.make_response()
+
     data = request.get_json()
     user_id = data['user_id']
-    info_tb = data['info_tb']
-
-    data = get_tb_cookies(info_tb['t_name'], info_tb['t_password'])
+    logger.info("get_tb_qrcode_and_cookie")
+    data = get_tb_qrcode_and_cookie()
     if not data['OK']:
-        result = ApiResult(code=401, message='淘宝账号添加失败，可能账号密码错误')
+        result = ApiResult(code=401, message="超时，请重新尝试扫码登录")
         return result.make_response()
 
     cookies_to_delete = Cookie.query.filter_by(user_id=user_id, type=1).all()
@@ -145,20 +181,19 @@ def add_tb_account():
 
     old_account = Account.query.get(user_id)
     if old_account:
-        old_account.tb_name = info_tb['t_name']
-        old_account.tb_password = info_tb['t_password']
+        old_account.tb_has_login = True
         db.session.commit()
     else:
         new_account = Account(
             user_id=user_id,
-            tb_name=info_tb['t_name'],
-            tb_password=info_tb['t_password']
+            tb_has_login=True
         )
         db.session.add(new_account)
         db.session.commit()
 
-    result = ApiResult(code=200, message='添加淘宝账号成功')
+    result = ApiResult(code=200, message='添加京东账号成功')
     return result.make_response()
+
 
 
 @bp.route('/addJd', methods=['POST'])
@@ -260,8 +295,7 @@ def search():
         'searchText': search_text
     }
     
-    # items_list = spider_taobao(arg)
-    items_list = []
+    items_list = spider_taobao(arg)
 
     cookies = Cookie.query.filter_by(user_id=user_id, type=2).all()
     if not cookies:

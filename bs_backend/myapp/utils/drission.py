@@ -6,15 +6,22 @@ import re
 import json
 from bs4 import BeautifulSoup
 
-from ..plugin import message_queue
+from ..plugin import message_queue, logger
 
+
+browser_instance = None
+
+def get_browser():
+    global browser_instance
+    if browser_instance is None:
+        co = ChromiumOptions()
+        co = co.set_argument('--no-sandbox')  # 关闭沙箱模式, 解决`$DISPLAY`报错
+        co = co.headless(True)
+        browser_instance = ChromiumPage(co)
+    return browser_instance
 
 def get_tb_cookies(name, password):
-    co = ChromiumOptions()
-    co = co.set_argument('--no-sandbox')  # 关闭沙箱模式, 解决`$DISPLAY`报错
-    co = co.headless(True)
-    cp = ChromiumPage(co)
-
+    cp = get_browser()
     cp.get("https://login.taobao.com/member/login.jhtml")
     time.sleep(1)
     cp.ele('css:#fm-login-id').clear()
@@ -22,18 +29,20 @@ def get_tb_cookies(name, password):
     cp.ele('css:#fm-login-password').clear()
     cp.ele('css:#fm-login-password').input(password)
     cp.ele('css:.fm-button.fm-submit.password-login').click()
+    logger.info("点击行为完成")
 
     time.sleep(2)
 
     return_data = {}
     error_element = cp.ele('css:.login-error-msg', timeout=1)
-    if error_element:
+
+    if error_element and error_element.text == '账密错误':
         return_data['OK'] = False
-        cp.close()
         return return_data
 
     cookies_string = []
     cookies = cp.cookies()
+    logger.info(cookies)
     for cookie in cookies:
         cookie_string = ''
         for key, value in cookie.items():
@@ -44,15 +53,46 @@ def get_tb_cookies(name, password):
     return_data['cookies_string'] = cookies_string
     return_data['OK'] = True
 
-    cp.quit()
+    return return_data
+
+
+def get_tb_qrcode_and_cookie():
+    cp = get_browser()
+    cp.set.window.max()
+    cp.get("https://login.taobao.com/member/login.jhtml")
+
+    qrcode_ele = cp.ele('css:.qrcode-login')
+    logger.info(qrcode_ele)
+    qrcode_base64 = qrcode_ele.get_screenshot(as_base64=True)
+
+    message_queue.put(qrcode_base64)
+
+    is_timeout = False
+    return_data = {}
+    try:
+        cp.wait.load_start(timeout=60, raise_err=True)
+    except DrissionPage.errors.WaitTimeoutError:
+        is_timeout = True
+        return_data['OK'] = False
+
+    if not is_timeout:
+        cookies_string = []
+        cookies = cp.cookies()
+        for cookie in cookies:
+            cookie_string = ''
+            for key, value in cookie.items():
+                sub_str = "%s=%s; " % (key, value)
+                cookie_string = cookie_string + sub_str
+            cookie_string = cookie_string.rstrip()
+            cookies_string.append(cookie_string)
+        return_data['cookies_string'] = cookies_string
+        return_data['OK'] = True
+        
     return return_data
 
 
 def spider_taobao(arg):
-    co = ChromiumOptions()
-    co = co.set_argument('--no-sandbox')  # 关闭沙箱模式, 解决`$DISPLAY`报错
-    co = co.headless(True)
-    cp = ChromiumPage(co)
+    cp = get_browser()
 
     cookies = arg['cookies']
     cp.set.cookies(cookies)
@@ -60,68 +100,6 @@ def spider_taobao(arg):
     cp.get('https://www.taobao.com/')
     cp.ele('css:#q').input(arg['searchText'])
     cp.ele('css:.btn-search.tb-bg').click()
-
-    # cp.wait.load_start(timeout=2)
-    # cp.scroll.to_bottom()
-    # items = cp.eles('.=doubleCardWrapper')
-    # for i in range(1, 49):
-    #     xpath = f'xpath://*[@id="search-content-leftWrap"]/div[3]/div[3]/div/a[{i}]'
-    #     item_ele = cp.ele(xpath)
-    #     if item_ele is None:
-    #
-    #     item_url = item_ele.attr('href')
-    #
-    #     if 'tmall' in item_url:
-    #         continue
-    #
-    #     item_ele = item_ele.ele('@tag()=div')
-    #     sub_item1_ele = item_ele.ele('@tag()=div')
-    #     sub_item2_ele = sub_item1_ele.next()
-    #     sub_item3_ele = sub_item2_ele.next()
-    #
-    #     img_ele = sub_item1_ele.ele('@tag()=div')
-    #     title_ele = img_ele.next()
-    #     price_ele = title_ele.next(2)
-    #
-    #     img_ele = img_ele.ele('@tag()=img')
-    #     img_url = img_ele.attr('src')
-    #
-    #     title = title_ele.ele('@tag()=div').text
-    #
-    #     price_ele = price_ele.ele('@tag()=div')
-    #     price_string = price_ele.text
-    #
-    #     procity_ele = price_ele.next()
-    #     print(1)
-        # child_element = parent_element.xpath('.//div/div[1]')
-        # //*[@id="search-content-leftWrap"]/div[3]/div[3]/div/a[37]/div/div[1]
-    # items_ele = cp.ele('xpath://*[@id="search-content-leftWrap"]/div[3]/div[3]/div')
-    # item1_ele = cp.ele('xpath://*[@id="search-content-leftWrap"]/div[3]/div[3]/div/a[1]')
-    # //*[@id="search-content-leftWrap"]/div[3]/div[3]/div/a[1]
-    # //*[@id="search-content-leftWrap"]/div[3]/div[3]/div/a[2]
-    # //*[@id="search-content-leftWrap"]/div[3]/div[3]/div
-    # return_data = []
-    # for item in items:
-    #     print(item)
-
-        # id = item.attrs['data-sku']
-        # title = item('xpath://div[contains(@class,"p-name")]/a').text
-        # nick = item('xpath://a[@class="curr-shop hd-shopname"]').text
-        # item_url = item('xpath://div[contains(@class,"p-name")]/a').link
-        # img_url = item('xpath://div[contains(@class,"p-img")]/a/img').attrs['data-lazy-img']
-        # price = item('xpath://div[contains(@class,"p-price")]/strong/i').text
-        # item_data = {
-        #     'real_id': id,
-        #     'title': title,
-        #     'item_url': item_url,
-        #     'img_url': img_url,
-        #     'price': price,
-        #     'nick': nick,
-        #     'procity': '',
-        #     'specification': '',
-        #     'type': 2
-        # }
-        # return_data.append(item_data)
 
     cp.listen.start('h5/mtop.relationrecommend.wirelessrecommend.recommend/2.0')
     response_list = cp.listen.wait(count=2)
@@ -158,15 +136,11 @@ def spider_taobao(arg):
             specification = ""
         item_data['specification'] = specification
         return_data.append(item_data)
-    cp.quit()
     return return_data
 
 
 def get_jd_qrcode_and_cookie():
-    co = ChromiumOptions()
-    co = co.set_argument('--no-sandbox')  # 关闭沙箱模式, 解决`$DISPLAY`报错
-    co = co.headless(True)
-    cp = ChromiumPage(co)
+    cp = get_browser()
     cp.set.window.max()
     cp.get("https://passport.jd.com/new/login.aspx")
 
@@ -195,16 +169,12 @@ def get_jd_qrcode_and_cookie():
             cookies_string.append(cookie_string)
         return_data['cookies_string'] = cookies_string
         return_data['OK'] = True
-
-    cp.quit()
+        
     return return_data
 
 
 def spider_jd(arg):
-    co = ChromiumOptions()
-    co = co.set_argument('--no-sandbox')  # 关闭沙箱模式, 解决`$DISPLAY`报错
-    co = co.headless(True)
-    cp = ChromiumPage(co)
+    cp = get_browser()
 
     cookies = arg['cookies']
     cp.set.cookies(cookies)
@@ -235,15 +205,11 @@ def spider_jd(arg):
             'type': 2
         }
         return_data.append(item_data)
-    cp.quit()
     return return_data
 
 
 def price_history(domain, real_id):
-    co = ChromiumOptions()
-    co = co.set_argument('--no-sandbox')  # 关闭沙箱模式, 解决`$DISPLAY`报错
-    co = co.headless(True)
-    cp = ChromiumPage(co)
+    cp = get_browser()
 
     if domain == 'tmall':
         url = f'http://detail.tmallvvv.com/item.htm?id={real_id}'
@@ -262,15 +228,11 @@ def price_history(domain, real_id):
         price_image = canvas_element.get_screenshot(as_base64=True)
         return_data['price_image'] = price_image
         return_data['OK'] = True
-    cp.close()
     return return_data
 
 
 def get_tb_price(url, cookie):
-    co = ChromiumOptions()
-    co = co.set_argument('--no-sandbox')  # 关闭沙箱模式, 解决`$DISPLAY`报错
-    co = co.headless(True)
-    cp = ChromiumPage(co)
+    cp = get_browser()
     cp.set.cookies(cookie)
     cp.get(url)
     time.sleep(2)
@@ -284,10 +246,7 @@ def get_tb_price(url, cookie):
 
 
 def get_jd_price(url, cookie):
-    co = ChromiumOptions()
-    co = co.set_argument('--no-sandbox')  # 关闭沙箱模式, 解决`$DISPLAY`报错
-    co = co.headless(True)
-    cp = ChromiumPage(co)
+    cp = get_browser()
     cp.set.cookies(cookie)
     cp.get(url)
     time.sleep(2)

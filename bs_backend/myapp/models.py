@@ -20,8 +20,7 @@ class Account(db.Model):
     __tablename__ = 'account'
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
-    tb_name = db.Column(db.String(30), nullable=True)
-    tb_password = db.Column(db.String(30), nullable=True)
+    tb_has_login = db.Column(db.Boolean, default=False)
     jd_has_login = db.Column(db.Boolean, default=False)
 
     def __repr__(self):

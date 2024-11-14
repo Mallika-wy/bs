@@ -17,10 +17,9 @@ export function modifyUser(id, modifiedUser) {
 }
 
 
-export function addTb(user_id, info_tb) {
+export function addTb(user_id) {
     return axios.post("/addTb", {
-        user_id,
-        info_tb
+        user_id
     })
 }
 

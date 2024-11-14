@@ -1,5 +1,5 @@
 <template>
-    <div class="TB">
+    <!-- <div class="TB">
         <div class="text">淘宝登录</div>
         <div>
             <el-input v-model="form_account.t_name" placeholder="请输入淘宝账号">
@@ -20,6 +20,24 @@
             <p></p>
             <el-button round color="#626aef" class="w-[100px]" type="primary" @click="loginTb">提交</el-button>
         </div>
+    </div> -->
+
+    <div class="TB">
+        <div class="text">淘宝登录</div>
+        <div>
+            <div>
+                <el-button round color="#626aef" class="w-[200px]" type="primary"
+                    @click="startLoginTb">获取淘宝登录二维码</el-button>
+                <el-button v-if="showRefreshTb" round color="#626aef" class="w-[100px]" type="primary"
+                    @click="refreshQrcodeTb">刷新二维码</el-button>
+            </div>
+            <div class="image-container" v-if="showImageTb">
+                <el-image :src="'data:image/*;base64,' + qrcodeTb" alt="description" fit="cover"
+                    v-if="showQrcodeTb"></el-image>
+                <el-image src="public/static/QrcodeFailed.png" alt="description" fit="cover"
+                    v-if="!showQrcodeTb"></el-image>
+            </div>
+        </div>
     </div>
 
 
@@ -31,14 +49,14 @@
             <div>
                 <el-button round color="#626aef" class="w-[200px]" type="primary"
                     @click="startLoginJd">获取京东登录二维码</el-button>
-                <el-button v-if="showRefresh" round color="#626aef" class="w-[100px]" type="primary"
-                    @click="refreshQrcode">刷新二维码</el-button>
+                <el-button v-if="showRefreshJd" round color="#626aef" class="w-[100px]" type="primary"
+                    @click="refreshQrcodeJd">刷新二维码</el-button>
             </div>
-            <div class="image-container" v-if="showImage">
-                <el-image :src="'data:image/*;base64,' + qrcodeUrl" alt="description" fit="cover"
-                    v-if="showQrcode"></el-image>
+            <div class="image-container" v-if="showImageJd">
+                <el-image :src="'data:image/*;base64,' + qrcodeJd" alt="description" fit="cover"
+                    v-if="showQrcodeJd"></el-image>
                 <el-image src="public/static/QrcodeFailed.png" alt="description" fit="cover"
-                    v-if="!showQrcode"></el-image>
+                    v-if="!showQrcodeJd"></el-image>
             </div>
         </div>
     </div>
@@ -56,45 +74,83 @@ import { addTb, addJd, getQrcode } from '@/api/api';
 
 const store = useStore();
 
-const showRefresh = ref(false);
-const showImage = ref(false);
-const showQrcode = ref(false);
+const showRefreshTb = ref(false);
+const showImageTb = ref(false);
+const showQrcodeTb = ref(false);
+
+const showRefreshJd = ref(false);
+const showImageJd = ref(false);
+const showQrcodeJd = ref(false);
 
 
-const form_account = reactive({
-    t_name: '',
-    t_password: '',
-})
 
-const qrcodeUrl = ref('');
+// const form_account = reactive({
+//     t_name: '',
+//     t_password: '',
+// })
 
+const qrcodeTb = ref('');
+const qrcodeJd = ref('');
 
-const loginTb = () => {
-    for (let key in form_account) {
-        if (!form_account[key].trim()) { // 使用trim()去除可能的空白字符
-            notify('error', "账号或密码不能为空")
-            return;
-        }
-    }
+// const loginTb = () => {
+//     for (let key in form_account) {
+//         if (!form_account[key].trim()) { // 使用trim()去除可能的空白字符
+//             notify('error', "账号或密码不能为空")
+//             return;
+//         }
+//     }
 
+//     const User = store.state.user;
+//     const data = { ...form_account }
+//     addTb(User.id, data)
+//         .then(res => {
+//             console.log(res)
+//             if (res.code === 200) {
+//                 notify('success', res.message)
+//             } else {
+//                 console.log(res)
+//                 notify('error', res.message)
+//             }
+//         })
+// }
+
+const startLoginTb = () => {
+    showRefreshTb.value = true;
+    showImageTb.value = true;
     const User = store.state.user;
-    const data = { ...form_account }
-    addTb(User.id, data)
+    notify('info', '请稍等..., 大约等待3秒')
+    addTb(User.id)
         .then(res => {
             console.log(res)
             if (res.code === 200) {
                 notify('success', res.message)
             } else {
-                console.log(res)
+                notify('error', res.message)
+            }
+            showRefreshTb.value = false;
+            showImageTb.value = false
+        })
+}
+
+const refreshQrcodeTb = () => {
+    getQrcode()
+        .then(res => {
+            console.log(res)
+            if (res.code === 200) {
+                showQrcodeTb.value = true
+                qrcodeTb.value = res.data
+                notify('success', res.message)
+            } else {
                 notify('error', res.message)
             }
         })
 }
 
 const startLoginJd = () => {
-    showRefresh.value = true;
-    showImage.value = true;
+    showRefreshJd.value = true;
+    showImageJd.value = true;
     const User = store.state.user;
+    notify('info', '请稍等..., 大约等待3秒')
     addJd(User.id)
         .then(res => {
             console.log(res)
@@ -103,18 +159,18 @@ const startLoginJd = () => {
             } else {
                 notify('error', res.message)
             }
-            showRefresh.value = false;
-            showImage.value = false
+            showRefreshJd.value = false;
+            showImageJd.value = false
         })
 }
 
-const refreshQrcode = () => {
+const refreshQrcodeJd = () => {
     getQrcode()
         .then(res => {
             console.log(res)
             if (res.code === 200) {
-                showQrcode.value = true
-                qrcodeUrl.value = res.data
+                showQrcodeJd.value = true
+                qrcodeJd.value = res.data
                 notify('success', res.message)
             } else {
                 notify('error', res.message)

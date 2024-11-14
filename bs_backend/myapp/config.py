@@ -3,7 +3,7 @@ class Config:
 	通用配置
 	"""
 	# 本地数据库链接配置
-	SQLALCHEMY_DATABASE_URI = "mysql+pymysql://root:2004wangyang@localhost/bs"
+	SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:root123@db:3306/bs'
 	SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 	# 发送邮箱smtp设置
