@@ -1,5 +1,5 @@
 <template>
-    <el-scrollbar height="100%" class="scrollbar">
+    <el-scrollbar v-if="!dialogDetailVisible" height="100%" class="scrollbar">
         <div class="search-container">
             <el-input v-model="form.search_text" placeholder="输入商品名称">
                 <template #prefix>
@@ -14,7 +14,7 @@
         <div class="title">商品列表</div>
 
         <el-row :gutter="20">
-            <el-col :span="8" v-for="item in form.item_list" :key="item.id">
+            <el-col :xs="24" :sm="12" :md="8" :lg="8" v-for="item in form.item_list" :key="item.id">
                 <el-card>
                     <img :src="item.img_url" style="width: 100%; height: 250px; object-fit: cover;" />
                     <div style="margin-left: 10px; text-align: start; font-size: 16px;">
@@ -35,23 +35,32 @@
             </el-col>
         </el-row>
     </el-scrollbar>
-    <el-dialog v-model="dialogDetailVisible" title="商品详情" width="50%">
-        <div>
-            <img :src="form.detail.img_url" alt="商品图片"
-                style="width: 100%; height: auto; display: block; margin-bottom: 20px;" />
-            <h2>{{ form.detail.title }}</h2>
-            <!-- 展示价格 -->
-            <p><strong>价格：</strong>{{ form.detail.price }}</p>
-            <!-- 展示商家昵称 -->
-            <p><strong>商家昵称：</strong>{{ form.detail.nick }}</p>
-            <!-- 展示省份 -->
-            <p><strong>省份：</strong>{{ form.detail.procity }}</p>
-            <p><strong>商品原链接：</strong><a :href="form.detail.item_url" target="_blank">{{ form.detail.item_url }}</a></p>
-            <p><strong>历史价格查询：</strong><img :src="'data:image/png;base64,' + form.detail.history_image" alt="历史价格查询" /></p>
-            <el-button @click="subscribe">降价通知</el-button>
-            <el-button @click="closeDetail">关闭</el-button>
+
+    <div v-if="dialogDetailVisible">
+        <div @click="closeDetail" class="back-icon">
+            <el-icon>
+                <ArrowLeft />
+            </el-icon>
+            返回搜索界面
         </div>
-    </el-dialog>
+
+        <el-row class="containerdetail">
+            <el-col :xs="24" :sm="12" :md="12" :lg="12">
+                <img :src="form.detail.img_url" alt="商品图片"
+                    style="width: 80%; height: auto; display: block; margin-bottom: 20px;" />
+            </el-col>
+            <el-col :xs="24" :sm="12" :md="12" :lg="12">
+                <h2>{{ form.detail.title }}</h2>
+                <p><strong>价格：</strong>{{ form.detail.price }}</p>
+                <p><strong>商家昵称：</strong>{{ form.detail.nick }}</p>
+                <p><strong>省份：</strong>{{ form.detail.procity }}</p>
+                <p><strong>商品原链接：</strong><a :href="form.detail.item_url" target="_blank">{{ form.detail.item_url }}</a></p>
+            </el-col>
+        </el-row>
+        <p><strong>历史价格查询：</strong><img :src="'data:image/png;base64,' + form.detail.history_image" alt="历史价格查询" /></p>
+        <el-button @click="subscribe">降价通知</el-button>
+    </div>
+
 </template>
 
 <script setup>
@@ -89,12 +98,10 @@ const search = () => {
 }
 
 const showDetail = (item) => {
-    console.log(item)
     searchItem(User.id, item.item_id)
         .then(res => {
             if (res.code === 200) {
                 form.detail = res.data
-                console.log(form.detail)
                 notify('success', res.message)
             } else {
                 notify('error', res.message)
@@ -109,10 +116,8 @@ const closeDetail = () => {
 }
 
 const subscribe = () => {
-    console.log(form.detail)
     subscribeItem(User.id, form.detail.id)
         .then(res => {
-            console.log(res)
             if (res.code === 200) {
                 notify('success', res.message)
             } else {
@@ -153,5 +158,77 @@ const subscribe = () => {
     /* 文本颜色，可以根据需要调整 */
     text-align: left;
     /* 文本对齐方式 */
+}
+
+.containerdetail {
+    padding: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.back-icon {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: #007bff;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.back-icon:hover {
+    text-decoration: underline;
+}
+
+.back-icon i {
+    margin-right: 5px;
+}
+
+img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+p {
+    font-size: 16px;
+    line-height: 2.0;
+    margin-bottom: 10px;
+}
+
+strong {
+    font-weight: bold;
+}
+
+.containerdetail a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.containerdetail button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.containerdetail button:hover {
+    background-color: #0056b3;
 }
 </style>

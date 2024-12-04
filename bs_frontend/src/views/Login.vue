@@ -27,7 +27,8 @@
           </el-input>
         </el-form-item>
         <el-form-item class="mt-8">
-          <el-button round color="#626aef" class="w-[100px]" type="primary" @click="onSubmit" :loading="loading">登录</el-button>
+          <el-button round color="#626aef" class="w-[100px]" type="primary" @click="onSubmit"
+            :loading="loading">登录</el-button>
           <el-button round color="#626aef" class="w-[100px]" type="primary" @click="register">注册</el-button>
         </el-form-item>
       </el-form>
@@ -38,11 +39,12 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { login } from '@/api/api'
+import { login, getUserFromToken } from '@/api/api'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
+import { onMounted } from 'vue'
 
-import { setToken } from '@/composables/cookie'
+import { setToken, getToken } from '@/composables/cookie'
 import { notify } from '@/composables/utils'
 
 const loading = ref(false)
@@ -85,11 +87,9 @@ const onSubmit = () => {
     loading.value = true
     login(form.name, form.password)
       .then(res => {
-        console.log(res);
         if (res.code === 200) {
           setToken(res.data.cookie)
           store.commit('setUser', res.data)
-          console.log(res.data.id);
           notify('success', res.message)
           router.push('/User')
         } else {
@@ -104,6 +104,21 @@ const onSubmit = () => {
 const register = () => {
   router.push('/register')
 }
+
+onMounted(() => {
+  const token = getToken()
+  if (token) {
+    getUserFromToken(token)
+      .then(res => {
+        if (res.code === 200) {
+          store.commit('setUser', res.data)
+          notify('success', res.message)
+          router.push('/User')
+        }
+      })
+    
+  }
+})
 </script>
 
 <style>

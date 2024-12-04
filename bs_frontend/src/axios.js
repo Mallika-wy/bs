@@ -12,7 +12,6 @@ service.interceptors.request.use(function (config) {
   // 有空再实现
   // const cookie = useCookies()
   // const token = cookie.get('token')
-  // console.log(token)
   // if (token) {
   //   config.headers[token] = token
   // }
@@ -27,7 +26,6 @@ service.interceptors.response.use(function (response) {
   return response.data;
 }, function (error) {
   // 对响应错误做点什么
-  console.log(error)
   notify('error', error.response.data.message)
   return Promise.reject(error);
 });

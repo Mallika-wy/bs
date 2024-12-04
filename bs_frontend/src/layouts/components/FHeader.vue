@@ -6,17 +6,26 @@
             </el-icon>
             ZJU B/S 商品比价网站
         </span>
-        <el-icon class="icon-btn">
+        <el-icon class="icon-btn" title="退出登录" @click="logout">
             <Fold />
-        </el-icon>
-        <el-icon class="icon-btn">
-            <Refresh />
-        </el-icon>
-        <el-icon class="icon-btn">
-            <FullScreen />
         </el-icon>
     </div>
 </template>
+
+<script setup>
+import { useStore } from 'vuex';
+import { useRouter } from 'vue-router'
+import { notify } from '@/composables/utils'
+import { removeToken } from '@/composables/cookie'
+const store = useStore();
+const router = useRouter()
+const logout = () => {
+    store.commit('setUser', null)
+    removeToken()
+    router.push('/login')
+    notify('info', '退出登录')
+}
+</script>
 
 <style>
 .f-header {
@@ -35,6 +44,7 @@
     width: 42px;
     height: 80px;
     cursor: pointer;
+    margin-left: auto; /* 自动推到右侧 */
 }
 
 .icon-btn:hover {

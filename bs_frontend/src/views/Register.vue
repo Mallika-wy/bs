@@ -92,8 +92,6 @@ const form = reactive({
     address: ''
 })
 
-const store = useStore()
-
 const router = useRouter()
 
 const rules = {
@@ -139,13 +137,9 @@ const submitForm = () => {
         }
         register(user_info_dict)
             .then(res => {
-                console.log(res);
                 if (res.code === 201) {
-                    setToken(res.data.cookie)
-                    store.commit('setUser', res.data)
-                    console.log(res.data.id);
-                    notify('success', res.message)
-                    router.push('/User')
+                    notify('success', '注册成功，返回到登录页登录')
+                    router.push('/login')
                 } else {
                     notify('error', res.message)
                 }

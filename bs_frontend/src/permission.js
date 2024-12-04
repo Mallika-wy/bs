@@ -10,13 +10,24 @@ router.beforeEach(async (to, from, next) => {
     const store = useStore()
     const token = getToken()
     const user = store.state.user
-    console.log(token)
-    console.log(user)
+
     // 没有登录，强制跳转回登录页
+    console.log('hit1')
     if (to.path != "/login" && to.path != "/register") {
+        console.log('hit2')
+        console.log(from.path)
+        console.log(to.path)
+        console.log(token)
+        console.log(user)
         if (!token || !user.id) {
             notify("error", "请先登录")
             return next({ path: "/login" })
+        }
+
+        if (token && !user.id) {
+            console.log('hit3')
+            const res = await getUserFromToken(token);
+            console.log(res)
         }
     }
 

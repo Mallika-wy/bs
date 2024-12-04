@@ -104,11 +104,9 @@ const qrcodeJd = ref('');
 //     const data = { ...form_account }
 //     addTb(User.id, data)
 //         .then(res => {
-//             console.log(res)
 //             if (res.code === 200) {
 //                 notify('success', res.message)
 //             } else {
-//                 console.log(res)
 //                 notify('error', res.message)
 //             }
 //         })
@@ -121,7 +119,6 @@ const startLoginTb = () => {
     notify('info', '请稍等..., 大约等待3秒')
     addTb(User.id)
         .then(res => {
-            console.log(res)
             if (res.code === 200) {
                 notify('success', res.message)
             } else {
@@ -135,7 +132,6 @@ const startLoginTb = () => {
 const refreshQrcodeTb = () => {
     getQrcode()
         .then(res => {
-            console.log(res)
             if (res.code === 200) {
                 showQrcodeTb.value = true
                 qrcodeTb.value = res.data
@@ -153,7 +149,6 @@ const startLoginJd = () => {
     notify('info', '请稍等..., 大约等待3秒')
     addJd(User.id)
         .then(res => {
-            console.log(res)
             if (res.code === 200) {
                 notify('success', res.message)
             } else {
@@ -167,7 +162,6 @@ const startLoginJd = () => {
 const refreshQrcodeJd = () => {
     getQrcode()
         .then(res => {
-            console.log(res)
             if (res.code === 200) {
                 showQrcodeJd.value = true
                 qrcodeJd.value = res.data
@@ -182,11 +176,11 @@ const refreshQrcodeJd = () => {
 
 <style scoped>
 .TB {
-    height: 35%;
+    height: 50%;
 }
 
 .JD {
-    height: 60%;
+    height: 50%;
 }
 
 .text {
@@ -269,9 +263,9 @@ const refreshQrcodeJd = () => {
 }
 
 .el-image {
-    width: 350px;
+    width: 200px;
     /* 设置图片的宽度 */
-    height: 350px;
+    height: 200px;
     /* 设置图片的高度 */
     border-radius: 10px;
     /* 为图片添加圆角 */

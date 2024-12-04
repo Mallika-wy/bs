@@ -83,3 +83,20 @@ export function history(user_id) {
         }
     })
 }
+
+export function getUserFromToken(token) {
+    return axios.get("/getUserFromToken", {
+        params: {
+            token: token
+        }
+    })
+}
+
+export function getItemsFromSearchID(user_id, search_id) {
+    return axios.get("/getItemsFromSearchID", {
+        params: {
+            user_id: user_id,
+            search_id: search_id
+        }
+    })
+}

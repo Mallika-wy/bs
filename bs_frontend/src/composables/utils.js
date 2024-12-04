@@ -5,7 +5,7 @@ export function notify(type, message) {
   ElNotification({
     message: message,
     type: type,
-    duration: 5000
+    duration: 1200
   })
 }
 
