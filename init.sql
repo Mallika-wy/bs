@@ -1,3 +1,5 @@
+use bs;
+
 CREATE TABLE `user` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(20) NOT NULL,

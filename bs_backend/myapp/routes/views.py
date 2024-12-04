@@ -1,6 +1,4 @@
 from flask import Blueprint, request, current_app
-import bcrypt
-import time
 import os
 from fuzzywuzzy import fuzz
 from queue import Empty
@@ -43,6 +41,31 @@ def login():
         return result.make_response()
     else:
         result = ApiResult(code=401, message='Invalid credentials')
+        return result.make_response()
+
+
+@bp.route('/getUserFromToken', methods=['GET'])
+@siwa.doc()
+def getUserFromToken():
+    token = request.args.get('token')
+    parts = token.split('|')
+    user_id = int(parts[0])
+    user = User.query.filter_by(id=user_id).first()
+    if user:
+        cookie = "%d|%s|%s" % (user.id, user.name, user.password)
+        data = {
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+            'phone': user.phone,
+            'address': user.address,
+            'sex': user.sex,
+            'cookie': cookie
+        }
+        result = ApiResult(code=200, message='获取信息成功，自动登录', data=data)
+        return result.make_response()
+    else:
+        result = ApiResult(code=401, message='获取失败')
         return result.make_response()
 
 
@@ -191,7 +214,7 @@ def add_tb_account():
         db.session.add(new_account)
         db.session.commit()
 
-    result = ApiResult(code=200, message='添加京东账号成功')
+    result = ApiResult(code=200, message='添加淘宝账号成功')
     return result.make_response()
 
 
@@ -501,4 +524,31 @@ def search_item():
     else:
         return_data['history_image'] =data['price_image']
     result = ApiResult(code=200, message='详情获取成功', data=return_data)
+    return result.make_response()
+
+
+@bp.route('/getItemsFromSearchID', methods=['GET'])
+@siwa.doc()
+def get_items_from_search_id():
+    user_id = request.args.get('user_id')
+    search_id = request.args.get('search_id')
+
+    item_searchs = Item_search.query.filter_by(search_id=search_id).all()
+    item_ids = [item_searchs.item_id for item_searchs in item_searchs]
+    items = Item.query.filter(Item.item_id.in_(item_ids)).all()
+    items_list = [
+        {
+            'item_id': item.item_id,
+            'real_id': item.real_id,
+            'title': item.title,
+            'type': item.type,
+            'price': item.price,
+            'nick': item.nick,
+            'item_url': item.item_url,
+            'img_url': item.img_url,
+            'procity': item.procity
+        }
+        for item in items
+    ]
+    result = ApiResult(code=200, message='获取成功', data=items_list)
     return result.make_response()

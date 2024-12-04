@@ -218,16 +218,15 @@ def price_history(domain, real_id):
     else:
         url = f'http://item.taobaovvv.com/item.htm?id={real_id}'
     cp.get(url)
-    time.sleep(2)
     return_data = {}
-    not_found = cp.ele('@id=loadingId', timeout=2)
-    if not_found:
-        return_data['OK'] = False
-    else:
+    found = cp.ele('css:.flot-text', timeout=2)
+    if found:
         canvas_element = cp.ele('@id=container')
         price_image = canvas_element.get_screenshot(as_base64=True)
         return_data['price_image'] = price_image
         return_data['OK'] = True
+    else:
+        return_data['OK'] = False
     return return_data
 
 

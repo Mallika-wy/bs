@@ -1,2 +1,3 @@
 /db-data/*
 /bs_frontend/node_modules
+/bs_backend/.idea/*

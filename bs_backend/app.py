@@ -1,14 +1,5 @@
-# from flask import Flask
-# app = Flask(__name__)
-# @app.route('/')
-# def hello():
-#     return 'Hello, Flask!'
-# if __name__ == '__main__':
-#     app.run(debug=True, host='0.0.0.0')
-
 import click
 from flask_migrate import Migrate
-import os
 
 from myapp import create_app
 from myapp.plugin import db
@@ -20,6 +11,7 @@ migrate = Migrate(app, db)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
+
 
 @app.cli.command()  # 注册为命令，可以传入 name 参数来自定义命令
 def dropall(drop):

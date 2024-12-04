@@ -1,0 +1,10 @@
+2024-11-16 20:22:31,865 - myapp.plugin - INFO - get_tb_qrcode_and_cookie
+2024-11-16 20:22:33,893 - myapp.plugin - INFO - <ChromiumElement div class='qrcode-login'>
+2024-11-17 00:10:16,620 - myapp.plugin - INFO - get_tb_qrcode_and_cookie
+2024-11-17 00:10:30,878 - myapp.plugin - INFO - <NoneElement method=ele(), locator=css:.qrcode-login, index=1, timeout=10>
+2024-11-17 00:11:35,711 - myapp.plugin - INFO - get_tb_qrcode_and_cookie
+2024-11-17 00:12:14,566 - myapp.plugin - INFO - get_tb_qrcode_and_cookie
+2024-11-17 00:13:34,843 - myapp.plugin - INFO - get_tb_qrcode_and_cookie
+2024-11-17 00:13:55,517 - myapp.plugin - INFO - <ChromiumElement div class='qrcode-login'>
+2024-12-04 13:20:04,971 - myapp.plugin - INFO - get_tb_qrcode_and_cookie
+2024-12-04 13:20:18,637 - myapp.plugin - INFO - <ChromiumElement div class='qrcode-login'>
