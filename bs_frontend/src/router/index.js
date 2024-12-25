@@ -13,6 +13,7 @@ import Item from "@/views/Item.vue"
 import Document from "@/views/Document.vue"
 import LoginTJ from '@/views/LoginTJ.vue'
 import NotFount from "@/views/404.vue"
+import Subscribe from '@/views/Subscribe.vue'
 
 const routes = [
     {
@@ -49,6 +50,12 @@ const routes = [
                 component: LoginTJ,
                 meta: {
                     title: '京东淘宝登录-ZJU B/S'
+                }
+            }, {
+                path: '/subscribe',
+                component: Subscribe,
+                meta: {
+                    title: '订阅管理-ZJU B/S'
                 }
             }]
     },

@@ -6,10 +6,10 @@ import ssl
 
 def send_email(data):
     app_config = current_app.config
-    mail_host = app_config['mail_host']         # 设置服务器
-    mail_post = app_config['mail_post']
-    mail_user = app_config['mail_user']     # 用户名
-    mail_pass = app_config['mail_pass']      # 口令
+    mail_host = app_config['MAIL_HOST']         # 设置服务器
+    mail_port = app_config['MAIL_PORT']
+    mail_user = app_config['MAIL_USER']     # 用户名
+    mail_pass = app_config['MAIL_PASS']      # 口令
 
     receiver = data['email']
     content = data['content']
@@ -21,6 +21,6 @@ def send_email(data):
     msg.set_content(content)
 
     context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(mail_host, mail_post, context=context) as smtp:
+    with smtplib.SMTP_SSL(mail_host, mail_port, context=context) as smtp:
         smtp.login(mail_user, mail_pass)
         smtp.send_message(msg)

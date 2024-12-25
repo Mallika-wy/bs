@@ -100,3 +100,42 @@ export function getItemsFromSearchID(user_id, search_id) {
         }
     })
 }
+
+export function getItem(item_id) {
+    return axios.get("/getItemFromItemID", {
+        params: {
+            item_id: item_id
+        }
+    })
+}
+
+export function getSubscribe(user_id) {
+    return axios.get("/getSubscribe", {
+        params: {
+            user_id: user_id
+        }
+    })
+}
+
+
+export function deleteSubscribe(user_id, subscribe_id) {
+    return axios.post("/deleteSubscribe", {
+        user_id,
+        subscribe_id
+    })
+}
+
+
+export function checkSubscribe(user_id, subscribe_id) {
+    return axios.post("/checkSubscribe", {
+        user_id,
+        subscribe_id
+    })
+}
+
+
+export function checkSubscribes(user_id) {
+    return axios.post("/checkSubscribes", {
+        user_id
+    })
+}

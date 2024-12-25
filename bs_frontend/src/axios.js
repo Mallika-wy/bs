@@ -3,8 +3,8 @@ import { notify } from '@/composables/utils'
 // import { useCookies } from '@vueuse/integrations/useCookies';
 
 const service = axios.create({
-  // baseURL: 'http://127.0.0.1:5000'
-  baseURL: 'http://localhost:5000'
+  baseURL: 'http://127.0.0.1:5000'
+  // baseURL: 'http://172.29.101.55:5000'
 })
 
 // 添加请求拦截器

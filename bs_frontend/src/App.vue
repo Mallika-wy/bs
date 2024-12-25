@@ -3,6 +3,7 @@
 </template>
 
 <style>
+
 #nprogress .bar{
   background-color: #f4f4f4!important;
   height: 3px!important;
@@ -24,4 +25,5 @@
   border-left-color: transparent;
   background-color: rgba(0, 0, 0, 0.1);
 }
+
 </style>

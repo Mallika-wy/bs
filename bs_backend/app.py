@@ -9,8 +9,9 @@ from myapp.models import User
 app = create_app()
 migrate = Migrate(app, db)
 
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, host='127.0.0.1')
 
 
 @app.cli.command()  # 注册为命令，可以传入 name 参数来自定义命令
@@ -38,4 +39,3 @@ def init():
     except Exception as e:
         db.session.rollback()
         click.echo('Error adding default user: ' + str(e))
-

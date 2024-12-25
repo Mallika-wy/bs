@@ -1,6 +1,6 @@
 <template>
     <div class="f-menu">
-        <el-menu default-active="2" class="el-menu-vertical-demo"  @select="handleSelect">
+        <el-menu default-active="2" class="el-menu-vertical-demo" @select="handleSelect">
             <el-menu-item index="/document">
                 <el-icon>
                     <Document />
@@ -18,6 +18,12 @@
                     <Folder />
                 </el-icon>
                 <span>商品库</span>
+            </el-menu-item>
+            <el-menu-item index="/subscribe">
+                <el-icon>
+                    <View />
+                </el-icon>
+                <span>订阅管理</span>
             </el-menu-item>
             <el-menu-item index="/user">
                 <el-icon>
@@ -41,7 +47,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const handleSelect = (e)=>{
+const handleSelect = (e) => {
     router.push(e)
 }
 </script>
@@ -57,7 +63,8 @@ const handleSelect = (e)=>{
     overflow-x: hidden;
     @apply shadow-md fixed bg-light-50;
 }
-.f-menu::-webkit-scrollbar{
+
+.f-menu::-webkit-scrollbar {
     width: 0px;
 }
 </style>

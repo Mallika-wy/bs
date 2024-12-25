@@ -6,6 +6,7 @@
                 <el-menu-item index="/document">说明文档</el-menu-item>
                 <el-menu-item index="/search">搜索</el-menu-item>
                 <el-menu-item index="/history">商品库</el-menu-item>
+                <el-menu-item index="/subscribe">订阅管理</el-menu-item>
                 <el-menu-item index="/user">用户中心</el-menu-item>
                 <el-menu-item index="/loginTJ">淘宝京东登录</el-menu-item>
             </el-sub-menu>

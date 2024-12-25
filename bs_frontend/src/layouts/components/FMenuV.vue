@@ -19,6 +19,12 @@
                 </el-icon>
                 <span>商品库</span>
             </el-menu-item>
+            <el-menu-item index="/subscribe">
+                <el-icon>
+                    <View />
+                </el-icon>
+                <span>订阅管理</span>
+            </el-menu-item>
             <el-menu-item index="/user">
                 <el-icon>
                     <setting />

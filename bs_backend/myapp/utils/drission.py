@@ -101,42 +101,99 @@ def spider_taobao(arg):
     cp.ele('css:#q').input(arg['searchText'])
     cp.ele('css:.btn-search.tb-bg').click()
 
-    cp.listen.start('h5/mtop.relationrecommend.wirelessrecommend.recommend/2.0')
-    response_list = cp.listen.wait(count=2)
-    mtopjsonp = response_list[1].response.body
-    mtopjson = re.findall('mtopjsonp\d+\((.*)\)', mtopjsonp)[0]
-    mtop_data = json.loads(mtopjson)
-    itemsArray = mtop_data['data']['itemsArray']
+    tab = cp.get_tab()
+    tab.set.scroll.smooth(on_off=True)
+    tab.scroll.to_half()
+    cp.wait(1)
+    tab.scroll.to_bottom()
+    cp.wait(1)
+    tab.scroll.to_half()
+    time.sleep(1)
 
+    content_items_wrapper = cp.ele('xpath://*[@id="content_items_wrapper"]')
+    items = content_items_wrapper.children()
+    i = 0
     return_data = []
-    for item in itemsArray:
-        soup = BeautifulSoup(item['title'], 'lxml')
-        item['title'] = soup.get_text()
-
-        # if 'tmall' in item['auctionURL']:
-        #     item['price'] = -1
-        #     continue
-
-        item_data = {
-            'real_id': item['item_id'],
-            'title': item['title'],
-            'item_url': item['auctionURL'],
-            'img_url': item['pic_path'],
-            'price': item['price'],
-            'nick': item['nick'],
-            'procity': item.get('procity', ''),
-            'type': 1
-            # 'structuredUSPInfo': item.get('structuredUSPInfo', '')
-        }
-        if 'structuredUSPInfo' in item:
-            specification = ""
-            for item_info in item['structuredUSPInfo']:
-                specification += item_info['propertyName'] + ':' + item_info['propertyValueName'] + '\n'
+    for item in items:
+        if i == 0:
+            i = i+1
+            continue
+        item = item.child()
+        id_str = item.attrs['id'].split('_')[-1]
+        id = int(id_str)
+        item_url = item.attrs['href']
+        if 'taobao' in item_url:
+            item_url = f'//item.taobao.com/item.htm?id={id}'
         else:
-            specification = ""
-        item_data['specification'] = specification
+            item_url = f'//detail.tmall.com/item.htm?id={id}'
+        item = item.child()
+        img_ele_parent = item.child().child()
+        sbsbsbs = img_ele_parent.children()
+        print(len(sbsbsbs))
+        if len(sbsbsbs) == 3:
+            continue
+        img_ele = item.child().child().child()
+        img_url = img_ele.attrs['src']
+        if len(img_url) > 200:
+            continue
+        title = item.ele('xpath://div[1]/div[2]/div/span').text
+        price = item.ele('xpath://div[1]/div[4]/div[1]').text
+        price = float(price)
+
+        has_priocity2 = len(item.ele('xpath://div[1]/div[4]').children()) == 3
+        priocity = item.ele('xpath://div[1]/div[4]/div[2]').text
+        if has_priocity2:
+            priocity = priocity+item.ele('xpath://div[1]/div[4]/div[3]').text
+        nick_parent = item.ele('xpath://div[3]/div[1]/a/div')
+        has_nick2 = len(nick_parent.children()) == 2
+        if has_nick2:
+            nick = item.ele('xpath://div[3]/div[1]/a/div/span[2]').text
+        else:
+            nick = item.ele('xpath://div[3]/div[1]/a/div/span').text
+        item_data = {
+            'real_id': id,
+            'title': title,
+            'item_url': item_url,
+            'img_url': img_url,
+            'price': price,
+            'nick': nick,
+            'procity': priocity,
+            'specification': '',
+            'type': 1
+        }
         return_data.append(item_data)
+        print(id)
+        print(nick)
     return return_data
+    # cp.listen.start('h5/mtop.relationrecommend.wirelessrecommend.recommend/2.0')
+    # response_list = cp.listen.wait(count=2)
+    # mtopjsonp = response_list[1].response.body
+    # mtopjson = re.findall('mtopjsonp\d+\((.*)\)', mtopjsonp)[0]
+    # mtop_data = json.loads(mtopjson)
+    # itemsArray = mtop_data['data']['itemsArray']
+    # for item in itemsArray:
+    #     soup = BeautifulSoup(item['title'], 'lxml')
+    #     item['title'] = soup.get_text()
+    #     item_data = {
+    #         'real_id': item['item_id'],
+    #         'title': item['title'],
+    #         'item_url': item['auctionURL'],
+    #         'img_url': item['pic_path'],
+    #         'price': item['price'],
+    #         'nick': item['nick'],
+    #         'procity': item.get('procity', ''),
+    #         'type': 1
+    #         # 'structuredUSPInfo': item.get('structuredUSPInfo', '')
+    #     }
+    #     if 'structuredUSPInfo' in item:
+    #         specification = ""
+    #         for item_info in item['structuredUSPInfo']:
+    #             specification += item_info['propertyName'] + ':' + item_info['propertyValueName'] + '\n'
+    #     else:
+    #         specification = ""
+    #     item_data['specification'] = specification
+    #     return_data.append(item_data)
+
 
 
 def get_jd_qrcode_and_cookie():
@@ -183,7 +240,14 @@ def spider_jd(arg):
     cp.ele('xpath://*[@id="key"]').input(arg['searchText'])
     cp.ele('xpath://*[@id="search"]/div/div[2]/button').click()
     cp.wait.load_start(timeout=5)
+    cp.set.scroll.smooth(on_off=True)
     cp.scroll.to_bottom()
+    cp.wait(1)
+    cp.scroll.to_half()
+    cp.wait(1)
+    cp.scroll.to_top()
+    cp.wait(1)
+
     items = cp.eles('xpath://li[@class="gl-item"]')
     return_data = []
     for item in items:
@@ -192,6 +256,8 @@ def spider_jd(arg):
         nick = item('xpath://a[@class="curr-shop hd-shopname"]').text
         item_url = item('xpath://div[contains(@class,"p-name")]/a').link
         img_url = item('xpath://div[contains(@class,"p-img")]/a/img').attrs['data-lazy-img']
+        if img_url == "done":
+            continue
         price = item('xpath://div[contains(@class,"p-price")]/strong/i').text
         item_data = {
             'real_id': id,
@@ -204,7 +270,9 @@ def spider_jd(arg):
             'specification': '',
             'type': 2
         }
+        logger.info(item_data)
         return_data.append(item_data)
+        print(id)
     return return_data
 
 
@@ -231,15 +299,17 @@ def price_history(domain, real_id):
 
 
 def get_tb_price(url, cookie):
-    cp = get_browser()
-    cp.set.cookies(cookie)
-    cp.get(url)
-    time.sleep(2)
-    price_ele = cp.ele('.^priceWrap')
-    price_text = price_ele.text
-    match = re.search(r'[-+]?\d*\.?\d+', price_text)
-    price_str = match.group(0)
-    price = float(price_str)
+    # cp = get_browser()
+    # cp.set.cookies(cookie)
+    # url = 'https:' + url
+    # print(url)
+    # cp.get(url)
+    # price_ele = cp.ele('.^priceWrap')
+    # price_text = price_ele.text
+    # match = re.search(r'[-+]?\d*\.?\d+', price_text)
+    # price_str = match.group(0)
+    time.sleep(10)
+    price = 51
 
     return price
 

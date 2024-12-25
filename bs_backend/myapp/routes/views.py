@@ -120,7 +120,7 @@ def modify_user():
             result = ApiResult(code=409, message='This name is already taken')
             return result.make_response()
     if user.email != modified_user['email']:
-        count = User.query.filter_by(email=modified_user['email'])
+        count = User.query.filter_by(email=modified_user['email']).count()
         if count != 0:
             result = ApiResult(code=409, message='This email is already taken')
             return result.make_response()
@@ -139,7 +139,7 @@ def modify_user():
         'address': user.address,
         'sex': user.sex
     }
-    result = ApiResult(code=200, message='User created successfully', data=data)
+    result = ApiResult(code=200, message='User modified successfully', data=data)
     return result.make_response()
 
 
@@ -341,7 +341,7 @@ def search():
             specification=item_data['specification'],
             type=item_data['type'],
         )
-        print(item_data['item_url'])
+        print(item_data['img_url'])
         items.append(item)
     db.session.add_all(items)
     db.session.flush()
@@ -425,9 +425,14 @@ def subscribe():
         result = ApiResult(code=409, message='该用户不存在')
         return result.make_response()
 
-    item = Item.query.filter_by(id=item_id).first()
+    item = Item.query.filter_by(item_id=item_id).first()
     if not item:
         result = ApiResult(code=409, message='该商品不存在')
+        return result.make_response()
+
+    subscribe = Subscribe.query.filter_by(user_id=user.id, item_id=item_id).first()
+    if subscribe:
+        result = ApiResult(code=401, message="已经订阅过")
         return result.make_response()
 
     subscribe = Subscribe(user_id=user_id, item_id=item_id)
@@ -438,9 +443,94 @@ def subscribe():
     return result.make_response()
 
 
+@bp.route('/getSubscribe', methods=['GET'])
+@siwa.doc()
+def get_subscribe():
+    user_id = request.args.get('user_id')
+    subscribes_with_items = db.session.query(Subscribe, Item).join(Item, Subscribe.item_id == Item.item_id).filter(
+        Subscribe.user_id == user_id).all()
+
+    subscribe_list = []
+    for subscribe, item in subscribes_with_items:
+        subscribe_list.append({
+            'subscribe_id': subscribe.subscribe_id,
+            'item_id': item.item_id,
+            'real_id': item.real_id,
+            'title': item.title,
+            'type': item.type,
+            'price': item.price,
+            'nick': item.nick,
+            'item_url': item.item_url,
+            'img_url': item.img_url,
+            'procity': item.procity,
+            'specification': item.specification  # 根据你的Item表结构添加
+        })
+    result = ApiResult(code=200, message='获取成功', data=subscribe_list)
+    return result.make_response()
+
+
+@bp.route('/deleteSubscribe', methods=['POST'])
+@siwa.doc()
+def delete_subscribe():
+    data = request.get_json()
+    subscribe_id = data['subscribe_id']
+    subscribe = Subscribe.query.filter_by(subscribe_id=subscribe_id).first()
+    if subscribe:
+        db.session.delete(subscribe)
+        db.session.commit()
+        result = ApiResult(code=200, message="删除成功")
+        return result.make_response()
+    else:
+        result = ApiResult(code=200, message="没有该条订阅记录")
+        return result.make_response()
+
+
 @bp.route('/checkSubscribe', methods=['POST'])
 @siwa.doc()
 def check_subscribe():
+    data = request.get_json()
+    user_id = data['user_id']
+    subscribe_id = data['subscribe_id']
+    user = User.query.filter_by(id=user_id).first()
+
+    cookies = Cookie.query.filter_by(user_id=user_id, type=1).all()
+    if not cookies:
+        result = ApiResult(code=401, message="您没有设置淘宝的账号，无法爬取淘宝商品数据")
+        return result.make_response()
+    cookies_tb_list = [cookie.cookie for cookie in cookies]
+
+    cookies = Cookie.query.filter_by(user_id=user_id, type=2).all()
+    if not cookies:
+        result = ApiResult(code=401, message="您没有设置京东的账号，无法爬取京东商品数据")
+        return result.make_response()
+    cookies_jd_list = [cookie.cookie for cookie in cookies]
+
+    subscribe = Subscribe.query.filter_by(subscribe_id=subscribe_id).first()
+    item_id = subscribe.item_id
+    item = Item.query.filter_by(item_id=item_id).first()
+
+    content = f'尊敬的用户{user.name}, 您关注的如下商品已经降价:' + os.linesep
+
+    if item.type == 1:
+        new_price = get_tb_price(item.item_url, cookies_jd_list)
+    else:
+        new_price = get_jd_price(item.item_url, cookies_tb_list)
+
+    if new_price < item.price:
+        content += f'{item.title}价格已下降至{new_price}元，请及时购买' + os.linesep
+        send_email({'email': user.email, 'content': content})
+        result = ApiResult(code=200, message='检测到商品降价, 具体信息已发送给您的邮箱')
+        return result.make_response()
+    else:
+        content += f'{item.title}价格没有发生变化，仍然是{new_price}元，我们会持续关注您的订阅' + os.linesep
+        send_email({'email': user.email, 'content': content})
+        result = ApiResult(code=200, message='未检测到商品降价, 具体信息已发送给您的邮箱')
+        return result.make_response()
+
+
+@bp.route('/checkSubscribes', methods=['POST'])
+@siwa.doc()
+def check_subscribes():
     data = request.get_json()
     user_id = data['user_id']
     user = User.query.filter_by(id=user_id).first()
@@ -551,4 +641,29 @@ def get_items_from_search_id():
         for item in items
     ]
     result = ApiResult(code=200, message='获取成功', data=items_list)
+    return result.make_response()
+
+
+@bp.route('/getItemFromItemID', methods=['GET'])
+@siwa.doc()
+def get_item_from_item_id():
+    item_id = request.args.get('item_id')
+    item = Item.query.filter_by(item_id=item_id).first()
+    if item is None:
+        result = ApiResult(code=404, message='没有该商品')
+        return result.make_response()
+
+    data = {
+        'item_id': item.item_id,
+        'real_id': item.real_id,
+        'title': item.title,
+        'type': item.type,
+        'price': item.price,
+        'nick': item.nick,
+        'item_url': item.item_url,
+        'img_url': item.img_url,
+        'procity': item.procity
+    }
+
+    result = ApiResult(code=200, message='获取成功', data=data)
     return result.make_response()

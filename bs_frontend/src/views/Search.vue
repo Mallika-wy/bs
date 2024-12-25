@@ -161,12 +161,26 @@ const subscribe = () => {
 }
 
 .containerdetail {
-    padding: 20px;
-    max-width: 600px;
-    margin: 0 auto;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px; /* 内边距 */
+    margin: 10 auto; /* 上下边距为0，左右自动（自动边距使容器居中） */
+    background-color: #f9f9f9; /* 背景颜色 */
+    border-radius: 8px; /* 圆角 */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 阴影 */
+    max-width: 1200px; /* 最大宽度，根据需要调整 */
+    width: 100%; /* 宽度100% */
+}
+
+/* 列样式 */
+.containerdetail .el-col {
+    padding: 0 10px; /* 列之间的间距 */
+}
+
+/* 行样式 */
+.containerdetail .el-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: -10px; /* 负间距抵消列的padding */
+    margin-right: -10px; /* 负间距抵消列的padding */
 }
 
 .back-icon {
